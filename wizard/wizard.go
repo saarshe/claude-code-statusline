@@ -20,7 +20,15 @@ var (
 	sectionStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("5"))
 	optNameStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
 	optDescStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	keyStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("3"))  // yellow
+	actionStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))             // gray
+	hintSep       = actionStyle.Render(" · ")
 )
+
+// hint renders a single "key → action" pair with distinct colors.
+func hint(k, action string) string {
+	return keyStyle.Render(k) + actionStyle.Render(" "+action)
+}
 
 // Run launches the interactive setup wizard. Pass empty strings for cfgPath
 // and settingsPath to use the default locations.
@@ -38,7 +46,7 @@ func Run(cfgPath, settingsPath string) error {
 	// ── Step 1: What data do you want to see? ─────────────────────────────────
 
 	fmt.Println(headerStyle.Render("claude-code-statusline setup"))
-	fmt.Println(subtitleStyle.Render("x/space to toggle, enter to confirm. Ctrl+C to cancel."))
+	fmt.Println(hint("x/space", "toggle") + hintSep + hint("enter", "submit (not select!)") + hintSep + hint("ctrl+c", "cancel"))
 	fmt.Println()
 
 	selected := state.Features
