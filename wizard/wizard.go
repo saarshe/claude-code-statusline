@@ -77,24 +77,11 @@ func Run(cfgPath, settingsPath string) error {
 	// ── Step 2: Context window style (conditional) ────────────────────────────
 
 	if state.HasContext() {
-		if err := run(huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("📊 Context window — how verbose?").
-					Options(
-						huh.NewOption(opt("Percentage only", "44%"), "pct"),
-						huh.NewOption(opt("Token counts", "88k / 200k"), "tokens"),
-						huh.NewOption(optRaw("Tokens + bar", optDescStyle.Render("88k / 200k ")+" "+barPreview(4, 10)+" "+barPct.Render("44%")), "tokens_bar"),
-						huh.NewOption(optRaw("Block bar", barPreview(4, 10)+" "+barPct.Render("44%")), "block"),
-						huh.NewOption(optRaw("Gradient bar", barPreview(4, 10)+" "+barPct.Render("44%")+"  "+optDescStyle.Render("(green→yellow→red zones)")), "gradient"),
-						huh.NewOption(optRaw("Solid bar", barPreview(4, 10)+" "+barPct.Render("44%")), "solid"),
-						huh.NewOption(opt("ASCII bar", "[====------] 44%"), "ascii"),
-					).
-					Value(&state.ContextStyle),
-			),
-		)); err != nil {
+		style, err := runContextStyleSelector(state.ContextStyle)
+		if err != nil {
 			return err
 		}
+		state.ContextStyle = style
 	}
 
 	// ── Step 3: Cache style (conditional) ─────────────────────────────────────
@@ -264,11 +251,6 @@ func run(form *huh.Form) error {
 // opt renders a two-column option label: name in cyan, example in gray.
 func opt(name, example string) string {
 	return optNameStyle.Render(fmt.Sprintf("%-16s", name)) + optDescStyle.Render(example)
-}
-
-// optRaw is like opt but leaves the example string as-is (already colored).
-func optRaw(name, example string) string {
-	return optNameStyle.Render(fmt.Sprintf("%-16s", name)) + example
 }
 
 // barPreview renders a colored gradient bar for wizard option labels.
