@@ -40,7 +40,7 @@ func newContextStyleModel(current string) contextStyleModel {
 			label: "Percentage only",
 			value: "pct",
 			renderEx: func(pct float64) string {
-				return barPct.Render(fmt.Sprintf("%.0f%%", pct))
+				return thresholdColor(pct).Render(fmt.Sprintf("%.0f%%", pct))
 			},
 		},
 		{
@@ -48,7 +48,7 @@ func newContextStyleModel(current string) contextStyleModel {
 			value: "tokens",
 			renderEx: func(pct float64) string {
 				used := int(pct / 100 * 200)
-				return csMuted.Render(fmt.Sprintf("%dk / 200k", used))
+				return thresholdColor(pct).Render(fmt.Sprintf("%dk / 200k", used))
 			},
 		},
 		{
@@ -57,21 +57,21 @@ func newContextStyleModel(current string) contextStyleModel {
 			renderEx: func(pct float64) string {
 				used := int(pct / 100 * 200)
 				return csMuted.Render(fmt.Sprintf("%dk / 200k ", used)) +
-					animatedBar(pct, "█", "░") + " " + barPct.Render(fmt.Sprintf("%.0f%%", pct))
+					gradientBar(pct) + " " + thresholdColor(pct).Render(fmt.Sprintf("%.0f%%", pct))
 			},
 		},
 		{
 			label: "Block bar",
 			value: "block",
 			renderEx: func(pct float64) string {
-				return animatedBar(pct, "▓", "░") + " " + barPct.Render(fmt.Sprintf("%.0f%%", pct))
+				return blockBar(pct) + " " + thresholdColor(pct).Render(fmt.Sprintf("%.0f%%", pct))
 			},
 		},
 		{
 			label: "Gradient bar",
 			value: "gradient",
 			renderEx: func(pct float64) string {
-				return animatedBar(pct, "█", "░") + " " + barPct.Render(fmt.Sprintf("%.0f%%", pct)) +
+				return gradientBar(pct) + " " + thresholdColor(pct).Render(fmt.Sprintf("%.0f%%", pct)) +
 					"  " + csMuted.Render("(green→yellow→red)")
 			},
 		},
@@ -79,7 +79,7 @@ func newContextStyleModel(current string) contextStyleModel {
 			label: "Solid bar",
 			value: "solid",
 			renderEx: func(pct float64) string {
-				return animatedBar(pct, "█", "░") + " " + barPct.Render(fmt.Sprintf("%.0f%%", pct))
+				return solidBar(pct) + " " + thresholdColor(pct).Render(fmt.Sprintf("%.0f%%", pct))
 			},
 		},
 		{
@@ -105,14 +105,40 @@ func newContextStyleModel(current string) contextStyleModel {
 	return contextStyleModel{choices: choices, cursor: cursor, pct: 44.0}
 }
 
-// animatedBar renders a gradient-colored bar at the given fill percentage.
-func animatedBar(pct float64, fillChar, emptyChar string) string {
-	total := 10
-	filled := int(pct / 100 * float64(total))
-	if filled > total {
-		filled = total
-	}
+// gradientBar renders a per-character gradient bar (green→yellow→red by position).
+func gradientBar(pct float64) string {
+	const total = 10
+	filled := clamp(int(pct/100*total), 0, total)
 	return barPreview(filled, total)
+}
+
+// solidBar renders a single-color bar using █, color set by threshold.
+func solidBar(pct float64) string {
+	const total = 10
+	filled := clamp(int(pct/100*total), 0, total)
+	empty := total - filled
+	col := thresholdColor(pct)
+	return col.Render(strings.Repeat("█", filled)) + barDim.Render(strings.Repeat("░", empty))
+}
+
+// blockBar renders a single-color bar using ▓, color set by threshold.
+func blockBar(pct float64) string {
+	const total = 10
+	filled := clamp(int(pct/100*total), 0, total)
+	empty := total - filled
+	col := thresholdColor(pct)
+	return col.Render(strings.Repeat("▓", filled)) + barDim.Render(strings.Repeat("░", empty))
+}
+
+func thresholdColor(pct float64) lipgloss.Style {
+	switch {
+	case pct >= 90:
+		return barRed
+	case pct >= 70:
+		return barYellow
+	default:
+		return barGreen
+	}
 }
 
 func (m contextStyleModel) Init() tea.Cmd {
