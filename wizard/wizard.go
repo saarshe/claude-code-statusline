@@ -20,9 +20,16 @@ var (
 	sectionStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("5"))
 	optNameStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
 	optDescStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	keyStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("3"))  // yellow
-	actionStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))             // gray
+	keyStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("3"))
+	actionStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	hintSep       = actionStyle.Render(" · ")
+
+	// bar preview colors
+	barGreen  = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	barYellow = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+	barRed    = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+	barDim    = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	barPct    = lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // green = low usage
 )
 
 // hint renders a single "key → action" pair with distinct colors.
@@ -77,10 +84,10 @@ func Run(cfgPath, settingsPath string) error {
 					Options(
 						huh.NewOption(opt("Percentage only", "44%"), "pct"),
 						huh.NewOption(opt("Token counts", "88k / 200k"), "tokens"),
-						huh.NewOption(opt("Tokens + bar", "88k / 200k ▓▓▓▓░░░░░░"), "tokens_bar"),
-						huh.NewOption(opt("Block bar", "▓▓▓▓░░░░░░ 44%"), "block"),
-						huh.NewOption(opt("Gradient bar", "▓▓▓▓▓▓░░░░ 44%  (green→yellow→red zones)"), "gradient"),
-						huh.NewOption(opt("Solid bar", "████░░░░░░ 44%"), "solid"),
+						huh.NewOption(optRaw("Tokens + bar", optDescStyle.Render("88k / 200k ")+" "+barPreview(4, 10, "▓", "░")+" "+barPct.Render("44%")), "tokens_bar"),
+						huh.NewOption(optRaw("Block bar", barPreview(4, 10, "▓", "░")+" "+barPct.Render("44%")), "block"),
+						huh.NewOption(optRaw("Gradient bar", barPreview(4, 10, "▓", "░")+" "+barPct.Render("44%")+"  "+optDescStyle.Render("(green→yellow→red zones)")), "gradient"),
+						huh.NewOption(optRaw("Solid bar", barPreview(4, 10, "█", "░")+" "+barPct.Render("44%")), "solid"),
 						huh.NewOption(opt("ASCII bar", "[====------] 44%"), "ascii"),
 					).
 					Value(&state.ContextStyle),
@@ -257,6 +264,38 @@ func run(form *huh.Form) error {
 // opt renders a two-column option label: name in cyan, example in gray.
 func opt(name, example string) string {
 	return optNameStyle.Render(fmt.Sprintf("%-16s", name)) + optDescStyle.Render(example)
+}
+
+// optRaw is like opt but leaves the example string as-is (already colored).
+func optRaw(name, example string) string {
+	return optNameStyle.Render(fmt.Sprintf("%-16s", name)) + example
+}
+
+// barPreview renders a colored bar for use in wizard option labels.
+// filled/total are character counts; fillChar/emptyChar are the glyphs.
+func barPreview(filled, total int, fillChar, emptyChar string) string {
+	greenEnd := int(0.70 * float64(total))
+	yellowEnd := int(0.90 * float64(total))
+	empty := total - filled
+
+	gFill := clamp(filled, 0, greenEnd)
+	yFill := clamp(filled-greenEnd, 0, yellowEnd-greenEnd)
+	rFill := clamp(filled-yellowEnd, 0, total-yellowEnd)
+
+	return barGreen.Render(strings.Repeat(fillChar, gFill)) +
+		barYellow.Render(strings.Repeat(fillChar, yFill)) +
+		barRed.Render(strings.Repeat(fillChar, rFill)) +
+		barDim.Render(strings.Repeat(emptyChar, empty))
+}
+
+func clamp(v, lo, hi int) int {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
 }
 
 func featureOptions() []huh.Option[string] {
