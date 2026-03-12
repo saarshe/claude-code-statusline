@@ -24,12 +24,12 @@ var (
 	actionStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	hintSep       = actionStyle.Render(" · ")
 
-	// bar preview colors
-	barGreen  = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	barYellow = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
-	barRed    = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+	// bar preview colors — use RGB so they're vivid regardless of terminal theme
+	barGreen  = lipgloss.NewStyle().Foreground(lipgloss.Color("#22DD55"))
+	barYellow = lipgloss.NewStyle().Foreground(lipgloss.Color("#DDCC00"))
+	barRed    = lipgloss.NewStyle().Foreground(lipgloss.Color("#DD3333"))
 	barDim    = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	barPct    = lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // green = low usage
+	barPct    = lipgloss.NewStyle().Foreground(lipgloss.Color("#22DD55"))
 )
 
 // hint renders a single "key → action" pair with distinct colors.
@@ -84,10 +84,10 @@ func Run(cfgPath, settingsPath string) error {
 					Options(
 						huh.NewOption(opt("Percentage only", "44%"), "pct"),
 						huh.NewOption(opt("Token counts", "88k / 200k"), "tokens"),
-						huh.NewOption(optRaw("Tokens + bar", optDescStyle.Render("88k / 200k ")+" "+barPreview(4, 10, "▓", "░")+" "+barPct.Render("44%")), "tokens_bar"),
-						huh.NewOption(optRaw("Block bar", barPreview(4, 10, "▓", "░")+" "+barPct.Render("44%")), "block"),
-						huh.NewOption(optRaw("Gradient bar", barPreview(4, 10, "▓", "░")+" "+barPct.Render("44%")+"  "+optDescStyle.Render("(green→yellow→red zones)")), "gradient"),
-						huh.NewOption(optRaw("Solid bar", barPreview(4, 10, "█", "░")+" "+barPct.Render("44%")), "solid"),
+						huh.NewOption(optRaw("Tokens + bar", optDescStyle.Render("88k / 200k ")+" "+barPreview(4, 10)+" "+barPct.Render("44%")), "tokens_bar"),
+						huh.NewOption(optRaw("Block bar", barPreview(4, 10)+" "+barPct.Render("44%")), "block"),
+						huh.NewOption(optRaw("Gradient bar", barPreview(4, 10)+" "+barPct.Render("44%")+"  "+optDescStyle.Render("(green→yellow→red zones)")), "gradient"),
+						huh.NewOption(optRaw("Solid bar", barPreview(4, 10)+" "+barPct.Render("44%")), "solid"),
 						huh.NewOption(opt("ASCII bar", "[====------] 44%"), "ascii"),
 					).
 					Value(&state.ContextStyle),
@@ -271,9 +271,9 @@ func optRaw(name, example string) string {
 	return optNameStyle.Render(fmt.Sprintf("%-16s", name)) + example
 }
 
-// barPreview renders a colored bar for use in wizard option labels.
-// filled/total are character counts; fillChar/emptyChar are the glyphs.
-func barPreview(filled, total int, fillChar, emptyChar string) string {
+// barPreview renders a colored gradient bar for wizard option labels.
+// Always uses █/░ since shade block chars (▓) ignore ANSI colors in many terminals.
+func barPreview(filled, total int) string {
 	greenEnd := int(0.70 * float64(total))
 	yellowEnd := int(0.90 * float64(total))
 	empty := total - filled
@@ -282,10 +282,10 @@ func barPreview(filled, total int, fillChar, emptyChar string) string {
 	yFill := clamp(filled-greenEnd, 0, yellowEnd-greenEnd)
 	rFill := clamp(filled-yellowEnd, 0, total-yellowEnd)
 
-	return barGreen.Render(strings.Repeat(fillChar, gFill)) +
-		barYellow.Render(strings.Repeat(fillChar, yFill)) +
-		barRed.Render(strings.Repeat(fillChar, rFill)) +
-		barDim.Render(strings.Repeat(emptyChar, empty))
+	return barGreen.Render(strings.Repeat("█", gFill)) +
+		barYellow.Render(strings.Repeat("█", yFill)) +
+		barRed.Render(strings.Repeat("█", rFill)) +
+		barDim.Render(strings.Repeat("░", empty))
 }
 
 func clamp(v, lo, hi int) int {
