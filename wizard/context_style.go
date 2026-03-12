@@ -61,13 +61,6 @@ func newContextStyleModel(current string) contextStyleModel {
 			},
 		},
 		{
-			label: "Block bar",
-			value: "block",
-			renderEx: func(pct float64) string {
-				return blockBar(pct) + " " + thresholdColor(pct).Render(fmt.Sprintf("%.0f%%", pct))
-			},
-		},
-		{
 			label: "Gradient bar",
 			value: "gradient",
 			renderEx: func(pct float64) string {
@@ -121,14 +114,6 @@ func solidBar(pct float64) string {
 	return col.Render(strings.Repeat("█", filled)) + barDim.Render(strings.Repeat("░", empty))
 }
 
-// blockBar renders a single-color bar using ▓, color set by threshold.
-func blockBar(pct float64) string {
-	const total = 10
-	filled := clamp(int(pct/100*total), 0, total)
-	empty := total - filled
-	col := thresholdColor(pct)
-	return col.Render(strings.Repeat("▓", filled)) + barDim.Render(strings.Repeat("░", empty))
-}
 
 func thresholdColor(pct float64) lipgloss.Style {
 	switch {
