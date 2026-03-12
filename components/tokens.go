@@ -20,15 +20,8 @@ func (t *tokensComponent) Render(data *schema.Input, cfg *config.Config, th *the
 	}
 	u := data.ContextWindow.CurrentUsage
 
-	prefix := ""
-	if cfg.Emojis != config.EmojiNone {
-		prefix = "🎟️ "
-	} else {
-		prefix = "Tok: "
-	}
-
 	return th.Secondary.Render(fmt.Sprintf("%sIn: %s Out: %s",
-		prefix,
+		EmojiPrefix(cfg, "🎟️", "Tok: "),
 		HumanizeTokens(u.InputTokens),
 		HumanizeTokens(u.OutputTokens),
 	))

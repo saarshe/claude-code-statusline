@@ -17,14 +17,7 @@ func (d *durationComponent) Key() ComponentKey { return "duration" }
 func (d *durationComponent) Render(data *schema.Input, cfg *config.Config, th *theme.Theme) string {
 	ms := data.Cost.TotalDurationMS
 
-	prefix := ""
-	if cfg.Emojis != config.EmojiNone {
-		prefix = "⏱️ "
-	} else {
-		prefix = "Time: "
-	}
-
-	return th.Secondary.Render(prefix + formatDuration(ms))
+	return th.Secondary.Render(EmojiPrefix(cfg, "⏱️", "Time: ") + formatDuration(ms))
 }
 
 func formatDuration(ms int64) string {

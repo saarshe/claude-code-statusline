@@ -30,12 +30,5 @@ func (c *cacheHitComponent) Render(data *schema.Input, cfg *config.Config, th *t
 	total := cached + u.InputTokens
 	hitPct := int(float64(cached) / float64(total) * 100)
 
-	prefix := ""
-	if cfg.Emojis != config.EmojiNone {
-		prefix = "⚡ "
-	} else {
-		prefix = "Cache: "
-	}
-
-	return th.Secondary.Render(fmt.Sprintf("%s%d%% cached", prefix, hitPct))
+	return th.Secondary.Render(fmt.Sprintf("%s%d%% cached", EmojiPrefix(cfg, "⚡", "Cache: "), hitPct))
 }

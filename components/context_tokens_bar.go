@@ -20,11 +20,7 @@ func (c *contextTokensBarComponent) Render(data *schema.Input, cfg *config.Confi
 		return ""
 	}
 
-	prefix := ""
-	if cfg.Emojis != config.EmojiNone {
-		prefix = "📊 "
-	}
-
+	prefix := EmojiPrefix(cfg, "📊", "")
 	bar := renderBar(
 		func() float64 {
 			if cw.UsedPercentage != nil {
@@ -43,7 +39,7 @@ func (c *contextTokensBarComponent) Render(data *schema.Input, cfg *config.Confi
 	if cw.UsedPercentage != nil {
 		pct = *cw.UsedPercentage
 	}
-	style := contextStyle(th, pct, cfg.ContextBar.Thresholds)
+	style := ContextStyle(th, pct, cfg.ContextBar.Thresholds)
 
 	return style.Render(fmt.Sprintf("%s%s / %s", prefix, used, max)) + " " + bar
 }

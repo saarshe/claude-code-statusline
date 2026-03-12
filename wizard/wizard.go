@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/saars/claude-code-statusline/components"
 	"github.com/saars/claude-code-statusline/config"
 	"github.com/saars/claude-code-statusline/settings"
 )
@@ -260,9 +261,9 @@ func barPreview(filled, total int) string {
 	yellowEnd := int(0.90 * float64(total))
 	empty := total - filled
 
-	gFill := clamp(filled, 0, greenEnd)
-	yFill := clamp(filled-greenEnd, 0, yellowEnd-greenEnd)
-	rFill := clamp(filled-yellowEnd, 0, total-yellowEnd)
+	gFill := components.Clamp(filled, 0, greenEnd)
+	yFill := components.Clamp(filled-greenEnd, 0, yellowEnd-greenEnd)
+	rFill := components.Clamp(filled-yellowEnd, 0, total-yellowEnd)
 
 	return barGreen.Render(strings.Repeat("█", gFill)) +
 		barYellow.Render(strings.Repeat("█", yFill)) +
@@ -270,15 +271,6 @@ func barPreview(filled, total int) string {
 		barDim.Render(strings.Repeat("░", empty))
 }
 
-func clamp(v, lo, hi int) int {
-	if v < lo {
-		return lo
-	}
-	if v > hi {
-		return hi
-	}
-	return v
-}
 
 func featureOptions() []huh.Option[string] {
 	type feature struct {

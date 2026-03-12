@@ -16,10 +16,7 @@ func init() { Register(&gitStatusComponent{}) }
 func (g *gitStatusComponent) Key() ComponentKey { return "git_status" }
 
 func (g *gitStatusComponent) Render(data *schema.Input, cfg *config.Config, th *theme.Theme) string {
-	dir := data.Workspace.CurrentDir
-	if dir == "" {
-		dir = data.Cwd
-	}
+	dir := data.WorkDir()
 
 	branch := gitBranch(dir)
 	if branch == "" {
@@ -27,11 +24,6 @@ func (g *gitStatusComponent) Render(data *schema.Input, cfg *config.Config, th *
 	}
 
 	staged, modified := gitCounts(dir)
-
-	prefix := ""
-	if cfg.Emojis != config.EmojiNone {
-		prefix = "🌿 "
-	}
 
 	parts := []string{branch}
 	if staged > 0 {
@@ -41,7 +33,7 @@ func (g *gitStatusComponent) Render(data *schema.Input, cfg *config.Config, th *
 		parts = append(parts, fmt.Sprintf("~%d", modified))
 	}
 
-	return th.Accent.Render(prefix + strings.Join(parts, " "))
+	return th.Accent.Render(EmojiPrefix(cfg, "🌿", "") + strings.Join(parts, " "))
 }
 
 func gitCounts(dir string) (staged, modified int) {
