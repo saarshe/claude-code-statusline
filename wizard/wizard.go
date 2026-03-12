@@ -100,7 +100,25 @@ func Run(cfgPath, settingsPath string) error {
 		}
 	}
 
-	// ── Step 4: Lines changed style (conditional) ─────────────────────────────
+	// ── Step 4: Git style (conditional) ──────────────────────────────────────
+
+	if state.HasGit() {
+		if err := run(huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("🌿 Git — how verbose?").
+					Options(
+						huh.NewOption(opt("Branch only", "🌿 main"), "branch"),
+						huh.NewOption(opt("Branch + changes", "🌿 main +1 ~9"), "status"),
+					).
+					Value(&state.GitStyle),
+			),
+		)); err != nil {
+			return err
+		}
+	}
+
+	// ── Step 5: Lines changed style (conditional) ────────────────────────────
 
 	if state.HasLines() {
 		if err := run(huh.NewForm(
@@ -238,8 +256,7 @@ func featureOptions() []huh.Option[string] {
 		{"cache", "💾", "Cache", "how much context is reused vs freshly processed"},
 		{"cost", "💰", "Cost", "total session cost in USD"},
 		{"duration", "⏱️ ", "Duration", "total session time"},
-		{"git_branch", "🌿", "Git branch", "current branch name"},
-		{"git_status", "🌿", "Git status", "branch + staged / modified file counts"},
+		{"git", "🌿", "Git", "branch name and file change counts"},
 		{"lines_changed", "📝", "Lines changed", "total lines added / removed"},
 		{"directory", "📁", "Directory", "current working directory"},
 	}
