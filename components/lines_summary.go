@@ -25,10 +25,5 @@ func (l *linesSummaryComponent) Render(data *schema.Input, cfg *config.Config, t
 		return ""
 	}
 
-	prefix := ""
-	if cfg.Emojis != config.EmojiNone {
-		prefix = "📝 "
-	}
-
-	return th.Secondary.Render(fmt.Sprintf("%s±%d", prefix, total))
+	return th.Secondary.Render(fmt.Sprintf("%s±%d", GetMeta(l.Key()).Prefix(cfg), total))
 }

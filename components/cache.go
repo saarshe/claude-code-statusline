@@ -22,15 +22,8 @@ func (c *cacheComponent) Render(data *schema.Input, cfg *config.Config, th *them
 	}
 	u := data.ContextWindow.CurrentUsage
 
-	prefix := ""
-	if cfg.Emojis != config.EmojiNone {
-		prefix = "💾 "
-	} else {
-		prefix = "Cache: "
-	}
-
 	return th.Secondary.Render(fmt.Sprintf("%s%s reused, %s stored",
-		prefix,
+		GetMeta(c.Key()).Prefix(cfg),
 		HumanizeTokens(u.CacheReadInputTokens),
 		HumanizeTokens(u.CacheCreationInputTokens),
 	))

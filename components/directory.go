@@ -15,10 +15,7 @@ func init() { Register(&directoryComponent{}) }
 func (d *directoryComponent) Key() ComponentKey { return "directory" }
 
 func (d *directoryComponent) Render(data *schema.Input, cfg *config.Config, th *theme.Theme) string {
-	dir := data.Workspace.CurrentDir
-	if dir == "" {
-		dir = data.Cwd
-	}
+	dir := data.WorkDir()
 	if dir == "" {
 		return ""
 	}
@@ -28,8 +25,5 @@ func (d *directoryComponent) Render(data *schema.Input, cfg *config.Config, th *
 		return ""
 	}
 
-	if cfg.Emojis != config.EmojiNone {
-		return th.Primary.Render("📁 " + base)
-	}
-	return th.Primary.Render(base)
+	return th.Primary.Render(GetMeta(d.Key()).Prefix(cfg) + base)
 }

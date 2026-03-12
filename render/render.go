@@ -3,7 +3,6 @@ package render
 import (
 	"strings"
 
-	_ "github.com/saars/claude-code-statusline/components" // register all components
 	"github.com/saars/claude-code-statusline/components"
 	"github.com/saars/claude-code-statusline/config"
 	"github.com/saars/claude-code-statusline/schema"

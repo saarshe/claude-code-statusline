@@ -75,6 +75,15 @@ type Worktree struct {
 	OriginalBranch string `json:"original_branch,omitempty"`
 }
 
+// WorkDir returns the best available working directory, preferring
+// Workspace.CurrentDir and falling back to Cwd.
+func (i *Input) WorkDir() string {
+	if i.Workspace.CurrentDir != "" {
+		return i.Workspace.CurrentDir
+	}
+	return i.Cwd
+}
+
 func Parse(r io.Reader) (*Input, error) {
 	var input Input
 	if err := json.NewDecoder(r).Decode(&input); err != nil {

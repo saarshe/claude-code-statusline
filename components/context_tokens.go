@@ -20,17 +20,13 @@ func (c *contextTokensComponent) Render(data *schema.Input, cfg *config.Config, 
 		return ""
 	}
 
-	prefix := ""
-	if cfg.Emojis != config.EmojiNone {
-		prefix = "📊 "
-	}
-
+	prefix := GetMeta(c.Key()).Prefix(cfg)
 	used := HumanizeTokens(cw.TotalInputTokens)
 	max := HumanizeTokens(cw.ContextWindowSize)
 
 	style := th.Success
 	if cw.UsedPercentage != nil {
-		style = contextStyle(th, *cw.UsedPercentage, cfg.ContextBar.Thresholds)
+		style = ContextStyle(th, *cw.UsedPercentage, cfg.ContextBar.Thresholds)
 	}
 
 	return style.Render(fmt.Sprintf("%s%s / %s", prefix, used, max))

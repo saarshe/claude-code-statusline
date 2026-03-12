@@ -25,20 +25,11 @@ func init() { Register(&gitBranchComponent{}) }
 func (g *gitBranchComponent) Key() ComponentKey { return "git_branch" }
 
 func (g *gitBranchComponent) Render(data *schema.Input, cfg *config.Config, th *theme.Theme) string {
-	dir := data.Workspace.CurrentDir
-	if dir == "" {
-		dir = data.Cwd
-	}
-
-	branch := gitBranch(dir)
+	branch := gitBranch(data.WorkDir())
 	if branch == "" {
 		return ""
 	}
-
-	if cfg.Emojis != config.EmojiNone {
-		return th.Accent.Render("🌿 " + branch)
-	}
-	return th.Accent.Render(branch)
+	return th.Accent.Render(GetMeta(g.Key()).Prefix(cfg) + branch)
 }
 
 func gitBranch(dir string) string {

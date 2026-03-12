@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/saars/claude-code-statusline/components"
 )
 
 // tickMsg is sent on each animation frame.
@@ -101,14 +102,14 @@ func newContextStyleModel(current string) contextStyleModel {
 // gradientBar renders a per-character gradient bar (green→yellow→red by position).
 func gradientBar(pct float64) string {
 	const total = 10
-	filled := clamp(int(pct/100*total), 0, total)
+	filled := components.Clamp(int(pct/100*total), 0, total)
 	return barPreview(filled, total)
 }
 
 // solidBar renders a single-color bar using █, color set by threshold.
 func solidBar(pct float64) string {
 	const total = 10
-	filled := clamp(int(pct/100*total), 0, total)
+	filled := components.Clamp(int(pct/100*total), 0, total)
 	empty := total - filled
 	col := thresholdColor(pct)
 	return col.Render(strings.Repeat("█", filled)) + barDim.Render(strings.Repeat("░", empty))

@@ -16,11 +16,5 @@ func (a *agentComponent) Render(data *schema.Input, cfg *config.Config, th *them
 	if data.Agent == nil || data.Agent.Name == "" {
 		return ""
 	}
-
-	prefix := ""
-	if cfg.Emojis != config.EmojiNone {
-		prefix = "🤖 "
-	}
-
-	return th.Primary.Render(prefix + data.Agent.Name)
+	return th.Primary.Render(GetMeta(a.Key()).Prefix(cfg) + data.Agent.Name)
 }

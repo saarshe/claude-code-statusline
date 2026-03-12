@@ -1,0 +1,72 @@
+package components
+
+import "github.com/saars/claude-code-statusline/config"
+
+// Meta holds display metadata for a component or feature.
+type Meta struct {
+	Emoji      string // prefix when emojis enabled (e.g. "📊")
+	TextPrefix string // prefix when emojis disabled (e.g. "Cache: ")
+	TextSuffix string // suffix when emojis disabled (e.g. "]" for model)
+	Name       string // human-readable label (used by wizard)
+	Desc       string // short description (used by wizard)
+}
+
+// Prefix returns the display prefix for this meta entry based on emoji mode.
+func (m Meta) Prefix(cfg *config.Config) string {
+	if cfg.Emojis != config.EmojiNone && m.Emoji != "" {
+		return m.Emoji + " "
+	}
+	return m.TextPrefix
+}
+
+// Suffix returns the display suffix (only meaningful when emojis are off).
+func (m Meta) Suffix(cfg *config.Config) string {
+	if cfg.Emojis != config.EmojiNone {
+		return ""
+	}
+	return m.TextSuffix
+}
+
+var componentMeta = map[ComponentKey]Meta{
+	"model":              {Emoji: "🤖", TextPrefix: "[", TextSuffix: "]", Name: "Model name", Desc: "which Claude model is active"},
+	"context_pct":        {Emoji: "📊", Name: "Context %", Desc: "how full the context is"},
+	"context_bar":        {Emoji: "📊", Name: "Context bar", Desc: "visual context usage bar"},
+	"context_tokens":     {Emoji: "📊", Name: "Context tokens", Desc: "token counts with context size"},
+	"context_tokens_bar": {Emoji: "📊", Name: "Context tokens + bar", Desc: "token counts with visual bar"},
+	"tokens":             {Emoji: "🎟️", TextPrefix: "Tok: ", Name: "Token counts", Desc: "input / output tokens this turn"},
+	"cache":              {Emoji: "💾", TextPrefix: "Cache: ", Name: "Cache counts", Desc: "tokens reused vs stored"},
+	"cache_hit":          {Emoji: "⚡", TextPrefix: "Cache: ", Name: "Cache efficiency", Desc: "cache hit percentage"},
+	"cost":               {Emoji: "💰", Name: "Cost", Desc: "total session cost in USD"},
+	"duration":           {Emoji: "⏱️", TextPrefix: "Time: ", Name: "Duration", Desc: "total session time"},
+	"git_branch":         {Emoji: "🌿", Name: "Git branch", Desc: "current branch name"},
+	"git_status":         {Emoji: "🌿", Name: "Git status", Desc: "branch name and file change counts"},
+	"lines_changed":      {Emoji: "📝", Name: "Lines changed", Desc: "lines added / removed"},
+	"lines_summary":      {Emoji: "📝", Name: "Lines summary", Desc: "total lines touched"},
+	"directory":          {Emoji: "📁", Name: "Directory", Desc: "current working directory"},
+	"agent":              {Emoji: "🤖", Name: "Agent name", Desc: "shown when running as a sub-agent"},
+	"worktree":           {Emoji: "🌿", Name: "Worktree", Desc: "shown when working in a git worktree"},
+}
+
+// GetMeta returns the display metadata for a component key.
+func GetMeta(key ComponentKey) Meta {
+	return componentMeta[key]
+}
+
+// FeatureMeta maps wizard feature keys (which may group multiple components)
+// to display metadata. The wizard uses these for its selection UI.
+var FeatureMeta = []struct {
+	Key  string
+	Meta Meta
+}{
+	{"model", componentMeta["model"]},
+	{"context", Meta{Emoji: "📊", Name: "Context window", Desc: "how full the context is"}},
+	{"tokens", componentMeta["tokens"]},
+	{"cache", Meta{Emoji: "💾", Name: "Cache", Desc: "how much context is reused vs freshly processed"}},
+	{"cost", componentMeta["cost"]},
+	{"duration", componentMeta["duration"]},
+	{"git", Meta{Emoji: "🌿", Name: "Git", Desc: "branch name and file change counts"}},
+	{"lines_changed", componentMeta["lines_changed"]},
+	{"directory", componentMeta["directory"]},
+	{"agent", componentMeta["agent"]},
+	{"worktree", componentMeta["worktree"]},
+}

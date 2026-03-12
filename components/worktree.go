@@ -25,10 +25,5 @@ func (w *worktreeComponent) Render(data *schema.Input, cfg *config.Config, th *t
 		return ""
 	}
 
-	prefix := ""
-	if cfg.Emojis != config.EmojiNone {
-		prefix = "🌿 "
-	}
-
-	return th.Primary.Render(prefix + label)
+	return th.Primary.Render(GetMeta(w.Key()).Prefix(cfg) + label)
 }

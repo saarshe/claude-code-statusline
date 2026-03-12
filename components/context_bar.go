@@ -22,17 +22,13 @@ func (c *contextBarComponent) Render(data *schema.Input, cfg *config.Config, th 
 		return ""
 	}
 
-	prefix := ""
-	if cfg.Emojis != config.EmojiNone {
-		prefix = "📊 "
-	}
-
+	prefix := GetMeta(c.Key()).Prefix(cfg)
 	bar := renderBar(*pct, cfg.ContextBar.Style, cfg.ContextBar.Width)
 
 	// Gradient bar has per-character colors; wrapping with an outer Render would
 	// override them. Render the percentage separately and concatenate.
 	if cfg.ContextBar.Style == config.BarGradient {
-		pctStr := contextStyle(th, *pct, cfg.ContextBar.Thresholds).Render(fmt.Sprintf("%.0f%%", *pct))
+		pctStr := ContextStyle(th, *pct, cfg.ContextBar.Thresholds).Render(fmt.Sprintf("%.0f%%", *pct))
 		return prefix + bar + " " + pctStr
 	}
 
@@ -40,7 +36,7 @@ func (c *contextBarComponent) Render(data *schema.Input, cfg *config.Config, th 
 	if cfg.ContextBar.Style == config.BarPercent {
 		text = fmt.Sprintf("%s%.0f%%", prefix, *pct)
 	}
-	return contextStyle(th, *pct, cfg.ContextBar.Thresholds).Render(text)
+	return ContextStyle(th, *pct, cfg.ContextBar.Thresholds).Render(text)
 }
 
 func renderBar(pct float64, style config.BarStyle, width int) string {

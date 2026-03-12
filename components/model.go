@@ -17,8 +17,6 @@ func (m *modelComponent) Render(data *schema.Input, cfg *config.Config, th *them
 	if name == "" {
 		return ""
 	}
-	if cfg.Emojis != config.EmojiNone {
-		return th.Primary.Render("🤖 " + name)
-	}
-	return th.Primary.Render("[" + name + "]")
+	meta := GetMeta(m.Key())
+	return th.Primary.Render(meta.Prefix(cfg) + name + meta.Suffix(cfg))
 }
