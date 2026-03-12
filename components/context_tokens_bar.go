@@ -20,7 +20,7 @@ func (c *contextTokensBarComponent) Render(data *schema.Input, cfg *config.Confi
 		return ""
 	}
 
-	prefix := EmojiPrefix(cfg, "📊", "")
+	prefix := GetMeta(c.Key()).Prefix(cfg)
 	bar := renderBar(
 		func() float64 {
 			if cw.UsedPercentage != nil {

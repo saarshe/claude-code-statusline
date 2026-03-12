@@ -15,7 +15,7 @@ func init() { Register(&contextPctComponent{}) }
 func (c *contextPctComponent) Key() ComponentKey { return "context_pct" }
 
 func (c *contextPctComponent) Render(data *schema.Input, cfg *config.Config, th *theme.Theme) string {
-	prefix := EmojiPrefix(cfg, "📊", "")
+	prefix := GetMeta(c.Key()).Prefix(cfg)
 
 	pct := data.ContextWindow.UsedPercentage
 	if pct == nil {

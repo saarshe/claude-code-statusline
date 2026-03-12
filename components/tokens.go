@@ -21,7 +21,7 @@ func (t *tokensComponent) Render(data *schema.Input, cfg *config.Config, th *the
 	u := data.ContextWindow.CurrentUsage
 
 	return th.Secondary.Render(fmt.Sprintf("%sIn: %s Out: %s",
-		EmojiPrefix(cfg, "🎟️", "Tok: "),
+		GetMeta(t.Key()).Prefix(cfg),
 		HumanizeTokens(u.InputTokens),
 		HumanizeTokens(u.OutputTokens),
 	))

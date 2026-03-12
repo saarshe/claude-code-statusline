@@ -15,5 +15,5 @@ func init() { Register(&costComponent{}) }
 func (c *costComponent) Key() ComponentKey { return "cost" }
 
 func (c *costComponent) Render(data *schema.Input, cfg *config.Config, th *theme.Theme) string {
-	return th.Secondary.Render(fmt.Sprintf("%s$%.2f", EmojiPrefix(cfg, "💰", ""), data.Cost.TotalCostUSD))
+	return th.Secondary.Render(fmt.Sprintf("%s$%.2f", GetMeta(c.Key()).Prefix(cfg), data.Cost.TotalCostUSD))
 }

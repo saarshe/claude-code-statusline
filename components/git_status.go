@@ -33,7 +33,7 @@ func (g *gitStatusComponent) Render(data *schema.Input, cfg *config.Config, th *
 		parts = append(parts, fmt.Sprintf("~%d", modified))
 	}
 
-	return th.Accent.Render(EmojiPrefix(cfg, "🌿", "") + strings.Join(parts, " "))
+	return th.Accent.Render(GetMeta(g.Key()).Prefix(cfg) + strings.Join(parts, " "))
 }
 
 func gitCounts(dir string) (staged, modified int) {

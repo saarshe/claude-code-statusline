@@ -25,5 +25,5 @@ func (l *linesSummaryComponent) Render(data *schema.Input, cfg *config.Config, t
 		return ""
 	}
 
-	return th.Secondary.Render(fmt.Sprintf("%s±%d", EmojiPrefix(cfg, "📝", ""), total))
+	return th.Secondary.Render(fmt.Sprintf("%s±%d", GetMeta(l.Key()).Prefix(cfg), total))
 }

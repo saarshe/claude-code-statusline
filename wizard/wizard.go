@@ -273,29 +273,10 @@ func barPreview(filled, total int) string {
 
 
 func featureOptions() []huh.Option[string] {
-	type feature struct {
-		key   string
-		emoji string
-		name  string
-		desc  string
-	}
-	features := []feature{
-		{"model", "🤖", "Model name", "which Claude model is active"},
-		{"context", "📊", "Context window", "how full the context is"},
-		{"tokens", "🎟️ ", "Token counts", "input / output tokens this turn"},
-		{"cache", "💾", "Cache", "how much context is reused vs freshly processed"},
-		{"cost", "💰", "Cost", "total session cost in USD"},
-		{"duration", "⏱️ ", "Duration", "total session time"},
-		{"git", "🌿", "Git", "branch name and file change counts"},
-		{"lines_changed", "📝", "Lines changed", "total lines added / removed"},
-		{"directory", "📁", "Directory", "current working directory"},
-		{"agent", "🤖", "Agent name", "shown when running as a sub-agent"},
-		{"worktree", "🌿", "Worktree", "shown when working in a git worktree"},
-	}
-	opts := make([]huh.Option[string], len(features))
-	for i, f := range features {
-		label := f.emoji + " " + optNameStyle.Render(fmt.Sprintf("%-16s", f.name)) + optDescStyle.Render(f.desc)
-		opts[i] = huh.NewOption(label, f.key)
+	opts := make([]huh.Option[string], len(components.FeatureMeta))
+	for i, f := range components.FeatureMeta {
+		label := f.Meta.Emoji + " " + optNameStyle.Render(fmt.Sprintf("%-16s", f.Meta.Name)) + optDescStyle.Render(f.Meta.Desc)
+		opts[i] = huh.NewOption(label, f.Key)
 	}
 	return opts
 }

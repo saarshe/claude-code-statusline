@@ -29,7 +29,7 @@ func (g *gitBranchComponent) Render(data *schema.Input, cfg *config.Config, th *
 	if branch == "" {
 		return ""
 	}
-	return th.Accent.Render(EmojiPrefix(cfg, "🌿", "") + branch)
+	return th.Accent.Render(GetMeta(g.Key()).Prefix(cfg) + branch)
 }
 
 func gitBranch(dir string) string {

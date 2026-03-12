@@ -23,7 +23,7 @@ func (l *linesChangedComponent) Render(data *schema.Input, cfg *config.Config, t
 		return ""
 	}
 
-	prefix := EmojiPrefix(cfg, "📝", "")
+	prefix := GetMeta(l.Key()).Prefix(cfg)
 	parts := []string{}
 	if added > 0 {
 		parts = append(parts, fmt.Sprintf("+%d", added))

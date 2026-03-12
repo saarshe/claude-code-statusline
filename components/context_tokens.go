@@ -20,7 +20,7 @@ func (c *contextTokensComponent) Render(data *schema.Input, cfg *config.Config, 
 		return ""
 	}
 
-	prefix := EmojiPrefix(cfg, "📊", "")
+	prefix := GetMeta(c.Key()).Prefix(cfg)
 	used := HumanizeTokens(cw.TotalInputTokens)
 	max := HumanizeTokens(cw.ContextWindowSize)
 

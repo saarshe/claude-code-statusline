@@ -25,5 +25,5 @@ func (d *directoryComponent) Render(data *schema.Input, cfg *config.Config, th *
 		return ""
 	}
 
-	return th.Primary.Render(EmojiPrefix(cfg, "📁", "") + base)
+	return th.Primary.Render(GetMeta(d.Key()).Prefix(cfg) + base)
 }

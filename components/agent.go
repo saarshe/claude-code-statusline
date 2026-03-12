@@ -16,5 +16,5 @@ func (a *agentComponent) Render(data *schema.Input, cfg *config.Config, th *them
 	if data.Agent == nil || data.Agent.Name == "" {
 		return ""
 	}
-	return th.Primary.Render(EmojiPrefix(cfg, "🤖", "") + data.Agent.Name)
+	return th.Primary.Render(GetMeta(a.Key()).Prefix(cfg) + data.Agent.Name)
 }

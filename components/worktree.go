@@ -25,5 +25,5 @@ func (w *worktreeComponent) Render(data *schema.Input, cfg *config.Config, th *t
 		return ""
 	}
 
-	return th.Primary.Render(EmojiPrefix(cfg, "🌿", "") + label)
+	return th.Primary.Render(GetMeta(w.Key()).Prefix(cfg) + label)
 }

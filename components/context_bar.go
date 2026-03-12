@@ -22,7 +22,7 @@ func (c *contextBarComponent) Render(data *schema.Input, cfg *config.Config, th 
 		return ""
 	}
 
-	prefix := EmojiPrefix(cfg, "📊", "")
+	prefix := GetMeta(c.Key()).Prefix(cfg)
 	bar := renderBar(*pct, cfg.ContextBar.Style, cfg.ContextBar.Width)
 
 	// Gradient bar has per-character colors; wrapping with an outer Render would
