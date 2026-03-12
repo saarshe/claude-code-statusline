@@ -24,8 +24,9 @@ func TestWizardState_HasContext_False(t *testing.T) {
 
 func TestWizardState_ToConfig_IdentityOnly_SingleRow(t *testing.T) {
 	state := &WizardState{
-		Features: []string{"model", "git_branch", "git_status"},
-		Emojis:   "all",
+		Features:  []string{"model", "git"},
+		GitStyle:  "status",
+		Emojis:    "all",
 	}
 	cfg := state.ToConfig()
 	if len(cfg.Lines) != 1 {
@@ -185,6 +186,9 @@ func TestWizardState_DefaultState(t *testing.T) {
 	if state.LinesStyle == "" {
 		t.Error("DefaultState() should have non-empty LinesStyle")
 	}
+	if state.GitStyle == "" {
+		t.Error("DefaultState() should have non-empty GitStyle")
+	}
 	if state.BarWidth <= 0 {
 		t.Error("DefaultState() should have positive BarWidth")
 	}
@@ -265,6 +269,56 @@ func TestWizardState_HasLines_True(t *testing.T) {
 	state := &WizardState{Features: []string{"lines_changed"}}
 	if !state.HasLines() {
 		t.Error("expected HasLines() = true")
+	}
+}
+
+func TestWizardState_HasGit_True(t *testing.T) {
+	state := &WizardState{Features: []string{"model", "git"}}
+	if !state.HasGit() {
+		t.Error("expected HasGit() = true")
+	}
+}
+
+func TestWizardState_HasGit_False(t *testing.T) {
+	state := &WizardState{Features: []string{"model", "cost"}}
+	if state.HasGit() {
+		t.Error("expected HasGit() = false")
+	}
+}
+
+func TestWizardState_GitStyle_Branch(t *testing.T) {
+	state := &WizardState{
+		Features: []string{"git"},
+		GitStyle: "branch",
+	}
+	cfg := state.ToConfig()
+	row := cfg.Lines[0].Components
+	found := false
+	for _, c := range row {
+		if c == "git_branch" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected 'git_branch' component, got %v", row)
+	}
+}
+
+func TestWizardState_GitStyle_Status(t *testing.T) {
+	state := &WizardState{
+		Features: []string{"git"},
+		GitStyle: "status",
+	}
+	cfg := state.ToConfig()
+	row := cfg.Lines[0].Components
+	found := false
+	for _, c := range row {
+		if c == "git_status" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected 'git_status' component, got %v", row)
 	}
 }
 

@@ -30,6 +30,11 @@ type WizardState struct {
 	// Only used when "lines_changed" is in Features.
 	LinesStyle string
 
+	// GitStyle controls how git information is displayed.
+	// "branch" → git_branch (branch name only); "status" → git_status (branch + file counts).
+	// Only used when "git" is in Features.
+	GitStyle string
+
 	// Emojis is "all" or "none".
 	Emojis string
 
@@ -38,7 +43,7 @@ type WizardState struct {
 }
 
 // identityFeatures are shown in the first row (who/where am I).
-var identityFeatures = []string{"model", "git_branch", "git_status", "lines_changed", "directory"}
+var identityFeatures = []string{"model", "git", "lines_changed", "directory"}
 
 // statsFeatures are shown in the second row (numbers/metrics).
 var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration"}
@@ -46,10 +51,11 @@ var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration"}
 // DefaultState returns a WizardState that matches config.Default().
 func DefaultState() *WizardState {
 	return &WizardState{
-		Features:     []string{"model", "git_status", "context", "tokens", "cache", "cost"},
+		Features:     []string{"model", "git", "context", "tokens", "cache", "cost"},
 		ContextStyle: "block",
 		CacheStyle:   "counts",
 		LinesStyle:   "detail",
+		GitStyle:     "status",
 		Emojis:       "all",
 		BarWidth:     10,
 	}
@@ -63,6 +69,9 @@ func (s *WizardState) HasCache() bool { return s.hasFeature("cache") }
 
 // HasLines reports whether the user selected the lines_changed feature.
 func (s *WizardState) HasLines() bool { return s.hasFeature("lines_changed") }
+
+// HasGit reports whether the user selected the git feature.
+func (s *WizardState) HasGit() bool { return s.hasFeature("git") }
 
 func (s *WizardState) hasFeature(key string) bool {
 	for _, f := range s.Features {
@@ -92,6 +101,11 @@ func (s *WizardState) featureToComponent(feature string) string {
 			return "lines_summary"
 		}
 		return "lines_changed"
+	case "git":
+		if s.GitStyle == "branch" {
+			return "git_branch"
+		}
+		return "git_status"
 	default:
 		return feature // all other feature keys match component keys 1:1
 	}
@@ -110,7 +124,7 @@ func (s *WizardState) contextBarStyle() config.BarStyle {
 }
 
 // InferLayout distributes the selected features into rows:
-//   - Row 1 (identity): model, git_branch, git_status, lines_changed, directory
+//   - Row 1 (identity): model, git, lines_changed, directory
 //   - Row 2 (metrics):  context, tokens, cache, cost, duration
 //
 // If only one category has selections, a single row is returned.
