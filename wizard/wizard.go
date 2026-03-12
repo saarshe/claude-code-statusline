@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/saars/claude-code-statusline/config"
@@ -37,7 +38,7 @@ func Run(cfgPath, settingsPath string) error {
 	// ── Step 1: What data do you want to see? ─────────────────────────────────
 
 	fmt.Println(headerStyle.Render("claude-code-statusline setup"))
-	fmt.Println(subtitleStyle.Render("x to toggle, enter to confirm. Ctrl+C to cancel."))
+	fmt.Println(subtitleStyle.Render("x/space to toggle, enter to confirm. Ctrl+C to cancel."))
 	fmt.Println()
 
 	selected := state.Features
@@ -229,7 +230,12 @@ func Run(cfgPath, settingsPath string) error {
 // run executes a huh form with the Charm theme and converts ErrUserAborted
 // (Ctrl+C) to a clean cancellation instead of an error.
 func run(form *huh.Form) error {
-	err := form.WithTheme(huh.ThemeCharm()).Run()
+	km := huh.NewDefaultKeyMap()
+	km.MultiSelect.Toggle = key.NewBinding(
+		key.WithKeys(" ", "x"),
+		key.WithHelp("x/space", "toggle"),
+	)
+	err := form.WithTheme(huh.ThemeCharm()).WithKeyMap(km).Run()
 	if errors.Is(err, huh.ErrUserAborted) {
 		fmt.Println(subtitleStyle.Render("\nSetup cancelled."))
 		os.Exit(0)
