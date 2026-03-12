@@ -167,6 +167,11 @@ func (m contextStyleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m contextStyleModel) View() string {
+	// Return empty view when done so Bubble Tea clears the UI before quitting.
+	if m.done {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString("\n  " + csTitle.Render("📊 Context window — how verbose?") + "\n\n")
@@ -192,7 +197,7 @@ func (m contextStyleModel) View() string {
 // the chosen value. Returns current if the user cancels.
 func runContextStyleSelector(current string) (string, error) {
 	m := newContextStyleModel(current)
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	p := tea.NewProgram(m)
 	final, err := p.Run()
 	if err != nil {
 		return current, err
