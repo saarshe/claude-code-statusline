@@ -207,7 +207,7 @@ func (m contextStyleModel) View() string {
 // the chosen value. Returns current if the user cancels.
 func runContextStyleSelector(current string) (string, error) {
 	m := newContextStyleModel(current)
-	p := tea.NewProgram(m)
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	final, err := p.Run()
 	if err != nil {
 		return current, err
