@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/saars/claude-code-statusline/config"
 	"github.com/saars/claude-code-statusline/schema"
 	"github.com/saars/claude-code-statusline/theme"
@@ -51,7 +52,37 @@ func renderBar(pct float64, style config.BarStyle, width int) string {
 		return "[" + strings.Repeat("=", filled) + strings.Repeat("-", empty) + "]"
 	case config.BarPercent:
 		return ""
+	case config.BarGradient:
+		return renderGradientBar(filled, empty, width)
 	default: // BarBlock
 		return strings.Repeat("▓", filled) + strings.Repeat("░", empty)
 	}
+}
+
+// renderGradientBar colors each filled character by its position's zone:
+// green zone → yellow zone → red zone, so danger areas are always visible.
+func renderGradientBar(filled, empty, width int) string {
+	// zone boundaries as character positions
+	greenEnd := int(0.70 * float64(width))
+	yellowEnd := int(0.90 * float64(width))
+
+	green  := lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	yellow := lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+	red    := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+	dim    := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+
+	var b strings.Builder
+	for i := range filled {
+		ch := "▓"
+		switch {
+		case i < greenEnd:
+			b.WriteString(green.Render(ch))
+		case i < yellowEnd:
+			b.WriteString(yellow.Render(ch))
+		default:
+			b.WriteString(red.Render(ch))
+		}
+	}
+	b.WriteString(dim.Render(strings.Repeat("░", empty)))
+	return b.String()
 }

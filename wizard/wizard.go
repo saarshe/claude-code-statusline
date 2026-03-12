@@ -76,8 +76,10 @@ func Run(cfgPath, settingsPath string) error {
 					Title("📊 Context window — how verbose?").
 					Options(
 						huh.NewOption(opt("Percentage only", "44%"), "pct"),
-						huh.NewOption(opt("Token counts", "42k / 200k"), "tokens"),
+						huh.NewOption(opt("Token counts", "88k / 200k"), "tokens"),
+						huh.NewOption(opt("Tokens + bar", "88k / 200k ▓▓▓▓░░░░░░"), "tokens_bar"),
 						huh.NewOption(opt("Block bar", "▓▓▓▓░░░░░░ 44%"), "block"),
+						huh.NewOption(opt("Gradient bar", "▓▓▓▓▓▓░░░░ 44%  (green→yellow→red zones)"), "gradient"),
 						huh.NewOption(opt("Solid bar", "████░░░░░░ 44%"), "solid"),
 						huh.NewOption(opt("ASCII bar", "[====------] 44%"), "ascii"),
 					).

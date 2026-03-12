@@ -87,13 +87,16 @@ func (s *WizardState) hasFeature(key string) bool {
 func (s *WizardState) featureToComponent(feature string) string {
 	switch feature {
 	case "context":
-		if s.ContextStyle == "pct" {
+		switch s.ContextStyle {
+		case "pct":
 			return "context_pct"
-		}
-		if s.ContextStyle == "tokens" {
+		case "tokens":
 			return "context_tokens"
+		case "tokens_bar":
+			return "context_tokens_bar"
+		default:
+			return "context_bar"
 		}
-		return "context_bar"
 	case "cache":
 		if s.CacheStyle == "hit" {
 			return "cache_hit"
@@ -121,6 +124,8 @@ func (s *WizardState) contextBarStyle() config.BarStyle {
 		return config.BarSolid
 	case "ascii":
 		return config.BarASCII
+	case "gradient":
+		return config.BarGradient
 	default:
 		return config.BarBlock
 	}
