@@ -43,7 +43,7 @@ type WizardState struct {
 }
 
 // identityFeatures are shown in the first row (who/where am I).
-var identityFeatures = []string{"model", "git", "lines_changed", "directory"}
+var identityFeatures = []string{"model", "git", "lines_changed", "directory", "agent", "worktree"}
 
 // statsFeatures are shown in the second row (numbers/metrics).
 var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration"}
@@ -52,7 +52,7 @@ var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration"}
 func DefaultState() *WizardState {
 	return &WizardState{
 		Features:     []string{"model", "git", "context", "tokens", "cache", "cost"},
-		ContextStyle: "block",
+		ContextStyle: "solid",
 		CacheStyle:   "counts",
 		LinesStyle:   "detail",
 		GitStyle:     "status",
@@ -87,10 +87,16 @@ func (s *WizardState) hasFeature(key string) bool {
 func (s *WizardState) featureToComponent(feature string) string {
 	switch feature {
 	case "context":
-		if s.ContextStyle == "pct" {
+		switch s.ContextStyle {
+		case "pct":
 			return "context_pct"
+		case "tokens":
+			return "context_tokens"
+		case "tokens_bar":
+			return "context_tokens_bar"
+		default:
+			return "context_bar"
 		}
-		return "context_bar"
 	case "cache":
 		if s.CacheStyle == "hit" {
 			return "cache_hit"
@@ -118,6 +124,8 @@ func (s *WizardState) contextBarStyle() config.BarStyle {
 		return config.BarSolid
 	case "ascii":
 		return config.BarASCII
+	case "gradient":
+		return config.BarGradient
 	default:
 		return config.BarBlock
 	}

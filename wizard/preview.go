@@ -17,7 +17,9 @@ func MockInput() *schema.Input {
 			CurrentDir: "~/dev/my-project",
 		},
 		ContextWindow: schema.Context{
-			UsedPercentage: &pct,
+			UsedPercentage:    &pct,
+			TotalInputTokens:  88000,
+			ContextWindowSize: 200000,
 			CurrentUsage: &schema.Usage{
 				InputTokens:              8500,
 				OutputTokens:             1200,
@@ -25,6 +27,8 @@ func MockInput() *schema.Input {
 				CacheCreationInputTokens: 2000,
 			},
 		},
+		Agent:    &schema.Agent{Name: "subagent"},
+		Worktree: &schema.Worktree{Name: "feature-branch"},
 		Cost: schema.Cost{
 			TotalCostUSD:      2.57,
 			TotalDurationMS:   83000,

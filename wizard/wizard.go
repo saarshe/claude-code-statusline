@@ -20,9 +20,16 @@ var (
 	sectionStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("5"))
 	optNameStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
 	optDescStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	keyStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("3"))  // yellow
-	actionStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))             // gray
+	keyStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("3"))
+	actionStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	hintSep       = actionStyle.Render(" · ")
+
+	// bar preview colors — use RGB so they're vivid regardless of terminal theme
+	barGreen  = lipgloss.NewStyle().Foreground(lipgloss.Color("#22DD55"))
+	barYellow = lipgloss.NewStyle().Foreground(lipgloss.Color("#DDCC00"))
+	barRed    = lipgloss.NewStyle().Foreground(lipgloss.Color("#DD3333"))
+	barDim    = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	barPct    = lipgloss.NewStyle().Foreground(lipgloss.Color("#22DD55"))
 )
 
 // hint renders a single "key → action" pair with distinct colors.
@@ -70,21 +77,11 @@ func Run(cfgPath, settingsPath string) error {
 	// ── Step 2: Context window style (conditional) ────────────────────────────
 
 	if state.HasContext() {
-		if err := run(huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("📊 Context window — how verbose?").
-					Options(
-						huh.NewOption(opt("Percentage only", "44%"), "pct"),
-						huh.NewOption(opt("Block bar", "▓▓▓▓░░░░░░ 44%"), "block"),
-						huh.NewOption(opt("Solid bar", "████░░░░░░ 44%"), "solid"),
-						huh.NewOption(opt("ASCII bar", "[====------] 44%"), "ascii"),
-					).
-					Value(&state.ContextStyle),
-			),
-		)); err != nil {
+		style, err := runContextStyleSelector(state.ContextStyle)
+		if err != nil {
 			return err
 		}
+		state.ContextStyle = style
 	}
 
 	// ── Step 3: Cache style (conditional) ─────────────────────────────────────
@@ -256,6 +253,33 @@ func opt(name, example string) string {
 	return optNameStyle.Render(fmt.Sprintf("%-16s", name)) + optDescStyle.Render(example)
 }
 
+// barPreview renders a colored gradient bar for wizard option labels.
+// Always uses █/░ since shade block chars (▓) ignore ANSI colors in many terminals.
+func barPreview(filled, total int) string {
+	greenEnd := int(0.70 * float64(total))
+	yellowEnd := int(0.90 * float64(total))
+	empty := total - filled
+
+	gFill := clamp(filled, 0, greenEnd)
+	yFill := clamp(filled-greenEnd, 0, yellowEnd-greenEnd)
+	rFill := clamp(filled-yellowEnd, 0, total-yellowEnd)
+
+	return barGreen.Render(strings.Repeat("█", gFill)) +
+		barYellow.Render(strings.Repeat("█", yFill)) +
+		barRed.Render(strings.Repeat("█", rFill)) +
+		barDim.Render(strings.Repeat("░", empty))
+}
+
+func clamp(v, lo, hi int) int {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
+}
+
 func featureOptions() []huh.Option[string] {
 	type feature struct {
 		key   string
@@ -273,6 +297,8 @@ func featureOptions() []huh.Option[string] {
 		{"git", "🌿", "Git", "branch name and file change counts"},
 		{"lines_changed", "📝", "Lines changed", "total lines added / removed"},
 		{"directory", "📁", "Directory", "current working directory"},
+		{"agent", "🤖", "Agent name", "shown when running as a sub-agent"},
+		{"worktree", "🌿", "Worktree", "shown when working in a git worktree"},
 	}
 	opts := make([]huh.Option[string], len(features))
 	for i, f := range features {

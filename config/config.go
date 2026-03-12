@@ -19,10 +19,11 @@ const (
 type BarStyle string
 
 const (
-	BarBlock   BarStyle = "block"
-	BarSolid   BarStyle = "solid"
-	BarASCII   BarStyle = "ascii"
-	BarPercent BarStyle = "percent"
+	BarBlock    BarStyle = "block"
+	BarSolid    BarStyle = "solid"
+	BarASCII    BarStyle = "ascii"
+	BarPercent  BarStyle = "percent"
+	BarGradient BarStyle = "gradient"
 )
 
 type LineConfig struct {
@@ -130,9 +131,9 @@ func validate(cfg *Config) error {
 	}
 
 	switch cfg.ContextBar.Style {
-	case BarBlock, BarSolid, BarASCII, BarPercent:
+	case BarBlock, BarSolid, BarASCII, BarPercent, BarGradient:
 	default:
-		return fmt.Errorf("invalid context_bar.style %q: must be 'block', 'solid', 'ascii', or 'percent'", cfg.ContextBar.Style)
+		return fmt.Errorf("invalid context_bar.style %q: must be 'block', 'solid', 'ascii', 'percent', or 'gradient'", cfg.ContextBar.Style)
 	}
 
 	if len(cfg.ContextBar.Thresholds) != 2 {
