@@ -43,7 +43,7 @@ type WizardState struct {
 }
 
 // identityFeatures are shown in the first row (who/where am I).
-var identityFeatures = []string{"model", "git", "lines_changed", "directory"}
+var identityFeatures = []string{"model", "git", "lines_changed", "directory", "agent", "worktree"}
 
 // statsFeatures are shown in the second row (numbers/metrics).
 var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration"}
@@ -89,6 +89,9 @@ func (s *WizardState) featureToComponent(feature string) string {
 	case "context":
 		if s.ContextStyle == "pct" {
 			return "context_pct"
+		}
+		if s.ContextStyle == "tokens" {
+			return "context_tokens"
 		}
 		return "context_bar"
 	case "cache":

@@ -76,6 +76,7 @@ func Run(cfgPath, settingsPath string) error {
 					Title("📊 Context window — how verbose?").
 					Options(
 						huh.NewOption(opt("Percentage only", "44%"), "pct"),
+						huh.NewOption(opt("Token counts", "42k / 200k"), "tokens"),
 						huh.NewOption(opt("Block bar", "▓▓▓▓░░░░░░ 44%"), "block"),
 						huh.NewOption(opt("Solid bar", "████░░░░░░ 44%"), "solid"),
 						huh.NewOption(opt("ASCII bar", "[====------] 44%"), "ascii"),
@@ -273,6 +274,8 @@ func featureOptions() []huh.Option[string] {
 		{"git", "🌿", "Git", "branch name and file change counts"},
 		{"lines_changed", "📝", "Lines changed", "total lines added / removed"},
 		{"directory", "📁", "Directory", "current working directory"},
+		{"agent", "🤖", "Agent name", "shown when running as a sub-agent"},
+		{"worktree", "🌿", "Worktree", "shown when working in a git worktree"},
 	}
 	opts := make([]huh.Option[string], len(features))
 	for i, f := range features {
