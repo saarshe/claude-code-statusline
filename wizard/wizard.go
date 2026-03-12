@@ -37,7 +37,7 @@ func Run(cfgPath, settingsPath string) error {
 	// ── Step 1: What data do you want to see? ─────────────────────────────────
 
 	fmt.Println(headerStyle.Render("claude-code-statusline setup"))
-	fmt.Println(subtitleStyle.Render("Space to toggle, enter to confirm. Ctrl+C to cancel."))
+	fmt.Println(subtitleStyle.Render("x to toggle, enter to confirm. Ctrl+C to cancel."))
 	fmt.Println()
 
 	selected := state.Features
