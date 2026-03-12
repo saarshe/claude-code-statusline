@@ -28,6 +28,14 @@ func (c *contextBarComponent) Render(data *schema.Input, cfg *config.Config, th 
 	}
 
 	bar := renderBar(*pct, cfg.ContextBar.Style, cfg.ContextBar.Width)
+
+	// Gradient bar has per-character colors; wrapping with an outer Render would
+	// override them. Render the percentage separately and concatenate.
+	if cfg.ContextBar.Style == config.BarGradient {
+		pctStr := contextStyle(th, *pct, cfg.ContextBar.Thresholds).Render(fmt.Sprintf("%.0f%%", *pct))
+		return prefix + bar + " " + pctStr
+	}
+
 	text := fmt.Sprintf("%s%s %.0f%%", prefix, bar, *pct)
 	if cfg.ContextBar.Style == config.BarPercent {
 		text = fmt.Sprintf("%s%.0f%%", prefix, *pct)
