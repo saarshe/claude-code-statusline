@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/saars/claude-code-statusline/config"
@@ -19,7 +20,15 @@ var (
 	sectionStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("5"))
 	optNameStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
 	optDescStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	keyStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("3"))  // yellow
+	actionStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))             // gray
+	hintSep       = actionStyle.Render(" · ")
 )
+
+// hint renders a single "key → action" pair with distinct colors.
+func hint(k, action string) string {
+	return keyStyle.Render(k) + actionStyle.Render(" "+action)
+}
 
 // Run launches the interactive setup wizard. Pass empty strings for cfgPath
 // and settingsPath to use the default locations.
@@ -37,7 +46,7 @@ func Run(cfgPath, settingsPath string) error {
 	// ── Step 1: What data do you want to see? ─────────────────────────────────
 
 	fmt.Println(headerStyle.Render("claude-code-statusline setup"))
-	fmt.Println(subtitleStyle.Render("Space to toggle, enter to confirm. Ctrl+C to cancel."))
+	fmt.Println(hint("x/space", "toggle") + hintSep + hint("enter", "submit (not select!)") + hintSep + hint("ctrl+c", "cancel"))
 	fmt.Println()
 
 	selected := state.Features
@@ -229,7 +238,12 @@ func Run(cfgPath, settingsPath string) error {
 // run executes a huh form with the Charm theme and converts ErrUserAborted
 // (Ctrl+C) to a clean cancellation instead of an error.
 func run(form *huh.Form) error {
-	err := form.WithTheme(huh.ThemeCharm()).Run()
+	km := huh.NewDefaultKeyMap()
+	km.MultiSelect.Toggle = key.NewBinding(
+		key.WithKeys(" ", "x"),
+		key.WithHelp("x/space", "toggle"),
+	)
+	err := form.WithTheme(huh.ThemeCharm()).WithKeyMap(km).Run()
 	if errors.Is(err, huh.ErrUserAborted) {
 		fmt.Println(subtitleStyle.Render("\nSetup cancelled."))
 		os.Exit(0)
