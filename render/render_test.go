@@ -170,6 +170,27 @@ func TestRenderWithTheme_EmptyComponentsSkipped(t *testing.T) {
 	}
 }
 
+func TestRenderWithTheme_ThemeSeparatorOverridesConfig(t *testing.T) {
+	cfg := defaultCfg()
+	cfg.Separator.Character = "|"
+
+	th := theme.Get("default")
+
+	// Default theme has no separator set, so config separator is used.
+	output1 := RenderWithTheme(fullInput(), cfg, th)
+	if !strings.Contains(output1, "|") {
+		t.Errorf("expected config separator '|', got: %q", output1)
+	}
+
+	// Create a theme with a custom separator.
+	custom := *th
+	custom.Separator = " · "
+	output2 := RenderWithTheme(fullInput(), cfg, &custom)
+	if !strings.Contains(output2, "·") {
+		t.Errorf("expected theme separator '·', got: %q", output2)
+	}
+}
+
 func TestRenderWithTheme_UnknownComponentSkipped(t *testing.T) {
 	cfg := config.Default()
 	cfg.Lines = []config.LineConfig{

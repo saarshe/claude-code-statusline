@@ -11,6 +11,9 @@ import (
 
 // WizardState holds all choices collected across wizard steps.
 type WizardState struct {
+	// Theme is the color theme name (e.g. "default", "catppuccin", "nord").
+	Theme string
+
 	// Features is the set of high-level data categories the user wants to see.
 	// Valid values: "model", "context", "tokens", "cache", "cost", "duration",
 	// "git_branch", "git_status", "lines_changed", "directory".
@@ -57,6 +60,7 @@ var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration"}
 // DefaultState returns a WizardState that matches config.Default().
 func DefaultState() *WizardState {
 	return &WizardState{
+		Theme:        "default",
 		Features:     []string{"model", "git", "context", "tokens", "cache", "cost"},
 		ContextStyle: "solid",
 		TokenStyle:   "turn",
@@ -194,6 +198,9 @@ func (s *WizardState) InferLayout() [][]string {
 // ToConfig converts the wizard state to a *config.Config.
 func (s *WizardState) ToConfig() *config.Config {
 	cfg := config.Default()
+	if s.Theme != "" {
+		cfg.Theme = s.Theme
+	}
 	cfg.Emojis = config.EmojiMode(s.Emojis)
 	if s.HasContext() && s.ContextStyle != "pct" {
 		cfg.ContextBar.Style = s.contextBarStyle()

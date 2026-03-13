@@ -51,11 +51,19 @@ func Run(cfgPath, settingsPath string) error {
 
 	state := DefaultState()
 
-	// ── Step 1: What data do you want to see? ─────────────────────────────────
-
 	fmt.Println(headerStyle.Render("claude-code-statusline setup"))
 	fmt.Println(hint("x/space", "toggle") + hintSep + hint("enter", "submit (not select!)") + hintSep + hint("ctrl+c", "cancel"))
 	fmt.Println()
+
+	// ── Step 1: Theme ────────────────────────────────────────────────────────
+
+	selectedTheme, err := runThemeSelector(state.Theme)
+	if err != nil {
+		return err
+	}
+	state.Theme = selectedTheme
+
+	// ── Step 2: What data do you want to see? ─────────────────────────────────
 
 	selected := state.Features
 	if err := run(huh.NewForm(

@@ -20,6 +20,11 @@ type Theme struct {
 	Warning   lipgloss.Style
 	Danger    lipgloss.Style
 	Muted     lipgloss.Style
+
+	// Separator is the string placed between components (including any spacing).
+	// If empty, the renderer falls back to the config separator with Muted styling.
+	// Examples: " | ", " · ", "", "".
+	Separator string
 }
 
 var registry = map[string]*Theme{}
