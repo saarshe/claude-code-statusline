@@ -55,6 +55,22 @@ type Usage struct {
 	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
 }
 
+// TotalInput returns the total input tokens for this turn, including
+// fresh input, cache reads, and cache creation tokens.
+func (u *Usage) TotalInput() int {
+	return u.InputTokens + u.CacheReadInputTokens + u.CacheCreationInputTokens
+}
+
+// CacheHitPct returns the cache hit percentage (0-100). Returns 0 if there
+// are no input tokens.
+func (u *Usage) CacheHitPct() int {
+	total := u.TotalInput()
+	if total == 0 {
+		return 0
+	}
+	return int(float64(u.CacheReadInputTokens) / float64(total) * 100)
+}
+
 type Style struct {
 	Name string `json:"name"`
 }
