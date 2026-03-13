@@ -374,3 +374,64 @@ func TestWizardState_NoFeaturesSelected(t *testing.T) {
 	// Should not panic; lines may be empty
 	_ = cfg
 }
+
+func TestWizardState_Theme_DefaultState(t *testing.T) {
+	state := DefaultState()
+	if state.Theme != "default" {
+		t.Errorf("DefaultState().Theme = %q, want %q", state.Theme, "default")
+	}
+}
+
+func TestWizardState_Theme_ToConfig(t *testing.T) {
+	state := &WizardState{
+		Features: []string{"model"},
+		Theme:    "dracula",
+		Emojis:   "all",
+	}
+	cfg := state.ToConfig()
+	if cfg.Theme != "dracula" {
+		t.Errorf("ToConfig().Theme = %q, want %q", cfg.Theme, "dracula")
+	}
+}
+
+func TestWizardState_Theme_ToTOML(t *testing.T) {
+	state := &WizardState{
+		Features: []string{"model"},
+		Theme:    "nord",
+		Emojis:   "all",
+	}
+	tomlStr, err := state.ToTOML()
+	if err != nil {
+		t.Fatalf("ToTOML() error: %v", err)
+	}
+	if !strings.Contains(tomlStr, `theme = "nord"`) {
+		t.Errorf("expected TOML to contain theme = \"nord\", got:\n%s", tomlStr)
+	}
+}
+
+func TestWizardState_Theme_RoundTrip(t *testing.T) {
+	state := &WizardState{
+		Features: []string{"model", "cost"},
+		Theme:    "catppuccin",
+		Emojis:   "all",
+	}
+	tomlStr, err := state.ToTOML()
+	if err != nil {
+		t.Fatalf("ToTOML() error: %v", err)
+	}
+
+	f, err := os.CreateTemp(t.TempDir(), "config*.toml")
+	if err != nil {
+		t.Fatalf("could not create temp file: %v", err)
+	}
+	f.WriteString(tomlStr)
+	f.Close()
+
+	loaded, err := config.LoadFile(f.Name())
+	if err != nil {
+		t.Fatalf("LoadFile() error: %v\nTOML:\n%s", err, tomlStr)
+	}
+	if loaded.Theme != "catppuccin" {
+		t.Errorf("loaded.Theme = %q, want %q", loaded.Theme, "catppuccin")
+	}
+}

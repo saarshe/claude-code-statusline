@@ -15,7 +15,12 @@ func Render(input *schema.Input, cfg *config.Config) string {
 }
 
 func RenderWithTheme(input *schema.Input, cfg *config.Config, th *theme.Theme) string {
-	sep := th.Muted.Render(" " + cfg.Separator.Character + " ")
+	var sep string
+	if th.Separator != "" {
+		sep = th.Muted.Render(th.Separator)
+	} else {
+		sep = th.Muted.Render(" " + cfg.Separator.Character + " ")
+	}
 
 	lineOutputs := []string{}
 	for _, line := range cfg.Lines {
