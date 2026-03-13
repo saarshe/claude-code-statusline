@@ -31,6 +31,10 @@ var (
 	barRed    = lipgloss.NewStyle().Foreground(lipgloss.Color("#DD3333"))
 	barDim    = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	barPct    = lipgloss.NewStyle().Foreground(lipgloss.Color("#22DD55"))
+
+	// errNoFeatures is a sentinel returned by the features step when the user
+	// selects nothing; Run treats this as a graceful cancellation.
+	errNoFeatures = errors.New("no features selected")
 )
 
 // hint renders a single "key → action" pair with distinct colors.
@@ -55,148 +59,21 @@ func Run(cfgPath, settingsPath string) error {
 	fmt.Println(hint("x/space", "toggle") + hintSep + hint("enter", "submit (not select!)") + hintSep + hint("ctrl+c", "cancel"))
 	fmt.Println()
 
-	// ── Step 1: Theme ────────────────────────────────────────────────────────
+	// ── Interactive steps ────────────────────────────────────────────────────
 
-	selectedTheme, err := runThemeSelector(state.Theme)
-	if err != nil {
-		return err
-	}
-	state.Theme = selectedTheme
-
-	// ── Step 2: What data do you want to see? ─────────────────────────────────
-
-	selected := state.Features
-	if err := run(huh.NewForm(
-		huh.NewGroup(
-			huh.NewMultiSelect[string]().
-				Title("What data do you want to see?").
-				Options(featureOptions()...).
-				Value(&selected),
-		),
-	)); err != nil {
-		return err
-	}
-	state.Features = selected
-
-	if len(state.Features) == 0 {
-		fmt.Println(subtitleStyle.Render("No features selected — setup cancelled."))
-		return nil
-	}
-
-	// ── Step 2: Context window style (conditional) ────────────────────────────
-
-	if state.HasContext() {
-		style, err := runContextStyleSelector(state.ContextStyle)
-		if err != nil {
-			return err
+	for _, step := range Steps {
+		if step.ShouldRun != nil && !step.ShouldRun(state) {
+			continue
 		}
-		state.ContextStyle = style
-	}
-
-	// ── Step 3: Token display style (conditional) ────────────────────────────
-
-	if state.HasTokens() {
-		tokenExamples := map[string]string{
-			"turn":       "🎟️ In: 112k Out: 514",
-			"turn_cache": "🎟️ In: 112k (99% cached) Out: 514",
-			"session":    "🎟️ 35k out",
-			"full":       "🎟️ In: 112k (99% cached) Out: 514 · Session: 35k out",
-		}
-		if err := run(huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("🎟️  Tokens — how verbose?").
-					Description(
-						"Input = total tokens sent to the model (including cached).\n" +
-							"Output = tokens the model generated (the main cost driver — 5x input price).\n" +
-							"Cache hit % = how much input was reused cheaply from the previous turn.\n",
-					).
-					Options(styleOptions("tokens", tokenExamples)...).
-					Value(&state.TokenStyle),
-			),
-		)); err != nil {
+		if err := step.Run(state); err != nil {
+			if errors.Is(err, errNoFeatures) {
+				return nil
+			}
 			return err
 		}
 	}
 
-	// ── Step 4: Cache style (conditional) ─────────────────────────────────────
-
-	if state.HasCache() {
-		cacheExamples := map[string]string{
-			"hit":    "⚡ 37% cached",
-			"counts": "💾 5.0k reused, 2.0k stored",
-		}
-		if err := run(huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("💾 Cache — how verbose?").
-					Description(
-						"Each turn, Claude reuses previously processed context from cache (cheap)\n" +
-							"and stores new context for the next turn to reuse.\n",
-					).
-					Options(styleOptions("cache", cacheExamples)...).
-					Value(&state.CacheStyle),
-			),
-		)); err != nil {
-			return err
-		}
-	}
-
-	// ── Step 5: Git style (conditional) ──────────────────────────────────────
-
-	if state.HasGit() {
-		gitExamples := map[string]string{
-			"branch": "🌿 main",
-			"status": "🌿 main +1 ~9",
-		}
-		if err := run(huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("🌿 Git — how verbose?").
-					Options(styleOptions("git", gitExamples)...).
-					Value(&state.GitStyle),
-			),
-		)); err != nil {
-			return err
-		}
-	}
-
-	// ── Step 6: Lines changed style (conditional) ────────────────────────────
-
-	if state.HasLines() {
-		linesExamples := map[string]string{
-			"summary": "📝 ±32",
-			"detail":  "📝 +24 -8",
-		}
-		if err := run(huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("📝 Lines changed — how verbose?").
-					Options(styleOptions("lines_changed", linesExamples)...).
-					Value(&state.LinesStyle),
-			),
-		)); err != nil {
-			return err
-		}
-	}
-
-	// ── Step 7: Emojis ────────────────────────────────────────────────────────
-
-	if err := run(huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("✨ Show emojis?").
-				Options(
-					huh.NewOption(opt("Yes", "🤖 claude-sonnet-4-6 | 📊 44% | 💰 $2.57"), "all"),
-					huh.NewOption(opt("No", "claude-sonnet-4-6 | 44% | $2.57"), "none"),
-				).
-				Value(&state.Emojis),
-		),
-	)); err != nil {
-		return err
-	}
-
-	// ── Step 8: Preview + confirm ─────────────────────────────────────────────
+	// ── Preview + confirm ────────────────────────────────────────────────────
 
 	fmt.Println()
 	fmt.Println(sectionStyle.Render("Preview"))
@@ -220,7 +97,7 @@ func Run(cfgPath, settingsPath string) error {
 		return nil
 	}
 
-	// ── Step 9: Write config ──────────────────────────────────────────────────
+	// ── Write config ─────────────────────────────────────────────────────────
 
 	tomlStr, err := state.ToTOML()
 	if err != nil {
@@ -234,7 +111,7 @@ func Run(cfgPath, settingsPath string) error {
 	}
 	fmt.Printf("Config written to %s\n", cfgPath)
 
-	// ── Step 10: settings.json ────────────────────────────────────────────────
+	// ── settings.json ────────────────────────────────────────────────────────
 
 	binaryPath, _ := os.Executable()
 
@@ -307,7 +184,6 @@ func barPreview(filled, total int) string {
 		barRed.Render(strings.Repeat("█", rFill)) +
 		barDim.Render(strings.Repeat("░", empty))
 }
-
 
 // styleOptions builds huh options for a feature's style selector by looking up
 // component names from FeatureStyles/GetMeta. Examples are passed in because
