@@ -217,6 +217,41 @@ func TestParse_EmptyInput(t *testing.T) {
 	}
 }
 
+func TestUsage_TotalInput(t *testing.T) {
+	u := &Usage{InputTokens: 3, CacheReadInputTokens: 112000, CacheCreationInputTokens: 500}
+	if got := u.TotalInput(); got != 112503 {
+		t.Errorf("TotalInput() = %d, want 112503", got)
+	}
+}
+
+func TestUsage_TotalInput_Zero(t *testing.T) {
+	u := &Usage{}
+	if got := u.TotalInput(); got != 0 {
+		t.Errorf("TotalInput() = %d, want 0", got)
+	}
+}
+
+func TestUsage_CacheHitPct(t *testing.T) {
+	tests := []struct {
+		name     string
+		usage    Usage
+		wantPct  int
+	}{
+		{"high cache", Usage{InputTokens: 3, CacheReadInputTokens: 112000, CacheCreationInputTokens: 500}, 99},
+		{"no cache", Usage{InputTokens: 8500}, 0},
+		{"50/50", Usage{InputTokens: 500, CacheReadInputTokens: 500}, 50},
+		{"zero tokens", Usage{}, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.usage.CacheHitPct()
+			if got != tt.wantPct {
+				t.Errorf("CacheHitPct() = %d, want %d", got, tt.wantPct)
+			}
+		})
+	}
+}
+
 func TestParse_UnknownFields(t *testing.T) {
 	json := `{
 		"cwd": "/test",

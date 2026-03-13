@@ -35,6 +35,11 @@ type WizardState struct {
 	// Only used when "git" is in Features.
 	GitStyle string
 
+	// TokenStyle controls how token usage is displayed.
+	// "turn" → tokens; "turn_cache" → tokens_cache; "session" → tokens_session; "full" → tokens_full.
+	// Only used when "tokens" is in Features.
+	TokenStyle string
+
 	// Emojis is "all" or "none".
 	Emojis string
 
@@ -53,6 +58,7 @@ func DefaultState() *WizardState {
 	return &WizardState{
 		Features:     []string{"model", "git", "context", "tokens", "cache", "cost"},
 		ContextStyle: "solid",
+		TokenStyle:   "turn",
 		CacheStyle:   "counts",
 		LinesStyle:   "detail",
 		GitStyle:     "status",
@@ -69,6 +75,9 @@ func (s *WizardState) HasCache() bool { return s.hasFeature("cache") }
 
 // HasLines reports whether the user selected the lines_changed feature.
 func (s *WizardState) HasLines() bool { return s.hasFeature("lines_changed") }
+
+// HasTokens reports whether the user selected the tokens feature.
+func (s *WizardState) HasTokens() bool { return s.hasFeature("tokens") }
 
 // HasGit reports whether the user selected the git feature.
 func (s *WizardState) HasGit() bool { return s.hasFeature("git") }
@@ -96,6 +105,17 @@ func (s *WizardState) featureToComponent(feature string) string {
 			return "context_tokens_bar"
 		default:
 			return "context_bar"
+		}
+	case "tokens":
+		switch s.TokenStyle {
+		case "turn_cache":
+			return "tokens_cache"
+		case "session":
+			return "tokens_session"
+		case "full":
+			return "tokens_full"
+		default:
+			return "tokens"
 		}
 	case "cache":
 		if s.CacheStyle == "hit" {

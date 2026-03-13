@@ -180,6 +180,9 @@ func TestWizardState_DefaultState(t *testing.T) {
 	if state.ContextStyle == "" {
 		t.Error("DefaultState() should have non-empty ContextStyle")
 	}
+	if state.TokenStyle == "" {
+		t.Error("DefaultState() should have non-empty TokenStyle")
+	}
 	if state.CacheStyle == "" {
 		t.Error("DefaultState() should have non-empty CacheStyle")
 	}
@@ -319,6 +322,49 @@ func TestWizardState_GitStyle_Status(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("expected 'git_status' component, got %v", row)
+	}
+}
+
+func TestWizardState_TokenStyle_Turn(t *testing.T) {
+	state := &WizardState{Features: []string{"tokens"}, TokenStyle: "turn"}
+	cfg := state.ToConfig()
+	if cfg.Lines[0].Components[0] != "tokens" {
+		t.Errorf("expected 'tokens', got %v", cfg.Lines[0].Components)
+	}
+}
+
+func TestWizardState_TokenStyle_TurnCache(t *testing.T) {
+	state := &WizardState{Features: []string{"tokens"}, TokenStyle: "turn_cache"}
+	cfg := state.ToConfig()
+	if cfg.Lines[0].Components[0] != "tokens_cache" {
+		t.Errorf("expected 'tokens_cache', got %v", cfg.Lines[0].Components)
+	}
+}
+
+func TestWizardState_TokenStyle_Session(t *testing.T) {
+	state := &WizardState{Features: []string{"tokens"}, TokenStyle: "session"}
+	cfg := state.ToConfig()
+	if cfg.Lines[0].Components[0] != "tokens_session" {
+		t.Errorf("expected 'tokens_session', got %v", cfg.Lines[0].Components)
+	}
+}
+
+func TestWizardState_TokenStyle_Full(t *testing.T) {
+	state := &WizardState{Features: []string{"tokens"}, TokenStyle: "full"}
+	cfg := state.ToConfig()
+	if cfg.Lines[0].Components[0] != "tokens_full" {
+		t.Errorf("expected 'tokens_full', got %v", cfg.Lines[0].Components)
+	}
+}
+
+func TestWizardState_HasTokens(t *testing.T) {
+	state := &WizardState{Features: []string{"tokens"}}
+	if !state.HasTokens() {
+		t.Error("expected HasTokens() = true")
+	}
+	state2 := &WizardState{Features: []string{"model"}}
+	if state2.HasTokens() {
+		t.Error("expected HasTokens() = false")
 	}
 }
 

@@ -85,7 +85,32 @@ func Run(cfgPath, settingsPath string) error {
 		state.ContextStyle = style
 	}
 
-	// ── Step 3: Cache style (conditional) ─────────────────────────────────────
+	// ── Step 3: Token display style (conditional) ────────────────────────────
+
+	if state.HasTokens() {
+		if err := run(huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("🎟️  Tokens — how verbose?").
+					Description(
+						"Input = total tokens sent to the model (including cached).\n" +
+							"Output = tokens the model generated (the main cost driver — 5x input price).\n" +
+							"Cache hit % = how much input was reused cheaply from the previous turn.\n",
+					).
+					Options(
+						huh.NewOption(opt("Per-turn totals", "🎟️ In: 112k Out: 514"), "turn"),
+						huh.NewOption(opt("Per-turn + cache", "🎟️ In: 112k (99% cached) Out: 514"), "turn_cache"),
+						huh.NewOption(opt("Session output", "🎟️ 35k out"), "session"),
+						huh.NewOption(opt("Full breakdown", "🎟️ In: 112k (99% cached) Out: 514 · Session: 35k out"), "full"),
+					).
+					Value(&state.TokenStyle),
+			),
+		)); err != nil {
+			return err
+		}
+	}
+
+	// ── Step 4: Cache style (conditional) ─────────────────────────────────────
 
 	if state.HasCache() {
 		if err := run(huh.NewForm(
@@ -107,7 +132,7 @@ func Run(cfgPath, settingsPath string) error {
 		}
 	}
 
-	// ── Step 4: Git style (conditional) ──────────────────────────────────────
+	// ── Step 5: Git style (conditional) ──────────────────────────────────────
 
 	if state.HasGit() {
 		if err := run(huh.NewForm(
@@ -125,7 +150,7 @@ func Run(cfgPath, settingsPath string) error {
 		}
 	}
 
-	// ── Step 5: Lines changed style (conditional) ────────────────────────────
+	// ── Step 6: Lines changed style (conditional) ────────────────────────────
 
 	if state.HasLines() {
 		if err := run(huh.NewForm(
@@ -143,7 +168,7 @@ func Run(cfgPath, settingsPath string) error {
 		}
 	}
 
-	// ── Step 5: Emojis ────────────────────────────────────────────────────────
+	// ── Step 7: Emojis ────────────────────────────────────────────────────────
 
 	if err := run(huh.NewForm(
 		huh.NewGroup(
@@ -159,7 +184,7 @@ func Run(cfgPath, settingsPath string) error {
 		return err
 	}
 
-	// ── Step 6: Preview + confirm ─────────────────────────────────────────────
+	// ── Step 8: Preview + confirm ─────────────────────────────────────────────
 
 	fmt.Println()
 	fmt.Println(sectionStyle.Render("Preview"))
@@ -183,7 +208,7 @@ func Run(cfgPath, settingsPath string) error {
 		return nil
 	}
 
-	// ── Step 7: Write config ──────────────────────────────────────────────────
+	// ── Step 9: Write config ──────────────────────────────────────────────────
 
 	tomlStr, err := state.ToTOML()
 	if err != nil {
@@ -197,7 +222,7 @@ func Run(cfgPath, settingsPath string) error {
 	}
 	fmt.Printf("Config written to %s\n", cfgPath)
 
-	// ── Step 8: settings.json ─────────────────────────────────────────────────
+	// ── Step 10: settings.json ────────────────────────────────────────────────
 
 	binaryPath, _ := os.Executable()
 
