@@ -88,6 +88,12 @@ func Run(cfgPath, settingsPath string) error {
 	// ── Step 3: Token display style (conditional) ────────────────────────────
 
 	if state.HasTokens() {
+		tokenExamples := map[string]string{
+			"turn":       "🎟️ In: 112k Out: 514",
+			"turn_cache": "🎟️ In: 112k (99% cached) Out: 514",
+			"session":    "🎟️ 35k out",
+			"full":       "🎟️ In: 112k (99% cached) Out: 514 · Session: 35k out",
+		}
 		if err := run(huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
@@ -97,12 +103,7 @@ func Run(cfgPath, settingsPath string) error {
 							"Output = tokens the model generated (the main cost driver — 5x input price).\n" +
 							"Cache hit % = how much input was reused cheaply from the previous turn.\n",
 					).
-					Options(
-						huh.NewOption(opt("Per-turn totals", "🎟️ In: 112k Out: 514"), "turn"),
-						huh.NewOption(opt("Per-turn + cache", "🎟️ In: 112k (99% cached) Out: 514"), "turn_cache"),
-						huh.NewOption(opt("Session output", "🎟️ 35k out"), "session"),
-						huh.NewOption(opt("Full breakdown", "🎟️ In: 112k (99% cached) Out: 514 · Session: 35k out"), "full"),
-					).
+					Options(styleOptions("tokens", tokenExamples)...).
 					Value(&state.TokenStyle),
 			),
 		)); err != nil {
@@ -113,6 +114,10 @@ func Run(cfgPath, settingsPath string) error {
 	// ── Step 4: Cache style (conditional) ─────────────────────────────────────
 
 	if state.HasCache() {
+		cacheExamples := map[string]string{
+			"hit":    "⚡ 37% cached",
+			"counts": "💾 5.0k reused, 2.0k stored",
+		}
 		if err := run(huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
@@ -121,10 +126,7 @@ func Run(cfgPath, settingsPath string) error {
 						"Each turn, Claude reuses previously processed context from cache (cheap)\n" +
 							"and stores new context for the next turn to reuse.\n",
 					).
-					Options(
-						huh.NewOption(opt("Efficiency", "⚡ 37% cached"), "hit"),
-						huh.NewOption(opt("Counts", "💾 5.0k reused, 2.0k stored"), "counts"),
-					).
+					Options(styleOptions("cache", cacheExamples)...).
 					Value(&state.CacheStyle),
 			),
 		)); err != nil {
@@ -135,14 +137,15 @@ func Run(cfgPath, settingsPath string) error {
 	// ── Step 5: Git style (conditional) ──────────────────────────────────────
 
 	if state.HasGit() {
+		gitExamples := map[string]string{
+			"branch": "🌿 main",
+			"status": "🌿 main +1 ~9",
+		}
 		if err := run(huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
 					Title("🌿 Git — how verbose?").
-					Options(
-						huh.NewOption(opt("Branch only", "🌿 main"), "branch"),
-						huh.NewOption(opt("Branch + changes", "🌿 main +1 ~9"), "status"),
-					).
+					Options(styleOptions("git", gitExamples)...).
 					Value(&state.GitStyle),
 			),
 		)); err != nil {
@@ -153,14 +156,15 @@ func Run(cfgPath, settingsPath string) error {
 	// ── Step 6: Lines changed style (conditional) ────────────────────────────
 
 	if state.HasLines() {
+		linesExamples := map[string]string{
+			"summary": "📝 ±32",
+			"detail":  "📝 +24 -8",
+		}
 		if err := run(huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
 					Title("📝 Lines changed — how verbose?").
-					Options(
-						huh.NewOption(opt("Summary", "📝 ±32"), "summary"),
-						huh.NewOption(opt("Detail", "📝 +24 -8"), "detail"),
-					).
+					Options(styleOptions("lines_changed", linesExamples)...).
 					Value(&state.LinesStyle),
 			),
 		)); err != nil {
@@ -296,6 +300,19 @@ func barPreview(filled, total int) string {
 		barDim.Render(strings.Repeat("░", empty))
 }
 
+
+// styleOptions builds huh options for a feature's style selector by looking up
+// component names from FeatureStyles/GetMeta. Examples are passed in because
+// they're wizard-specific presentation (mock rendered output).
+func styleOptions(feature string, examples map[string]string) []huh.Option[string] {
+	styles := components.FeatureStyles[feature]
+	opts := make([]huh.Option[string], len(styles))
+	for i, s := range styles {
+		m := components.GetMeta(s.ComponentKey)
+		opts[i] = huh.NewOption(opt(m.Name, examples[s.Value]), s.Value)
+	}
+	return opts
+}
 
 func featureOptions() []huh.Option[string] {
 	opts := make([]huh.Option[string], len(components.FeatureMeta))
