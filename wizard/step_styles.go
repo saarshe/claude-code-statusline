@@ -3,12 +3,7 @@ package wizard
 import "github.com/charmbracelet/huh"
 
 func runContextStep(state *WizardState) error {
-	style, err := runContextStyleSelector(state.ContextStyle)
-	if err != nil {
-		return err
-	}
-	state.ContextStyle = style
-	return nil
+	return runContextStyleSelector(state)
 }
 
 func runTokensStep(state *WizardState) error {
@@ -18,7 +13,7 @@ func runTokensStep(state *WizardState) error {
 		"session":    "🎟️ 35k out",
 		"full":       "🎟️ In: 112k (99% cached) Out: 514 · Session: 35k out",
 	}
-	return run(huh.NewForm(
+	return runWithPreview(huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("🎟️  Tokens — how verbose?").
@@ -30,7 +25,7 @@ func runTokensStep(state *WizardState) error {
 				Options(styleOptions("tokens", tokenExamples)...).
 				Value(&state.TokenStyle),
 		),
-	))
+	), state)
 }
 
 func runCacheStep(state *WizardState) error {
@@ -38,7 +33,7 @@ func runCacheStep(state *WizardState) error {
 		"hit":    "⚡ 37% cached",
 		"counts": "💾 5.0k reused, 2.0k stored",
 	}
-	return run(huh.NewForm(
+	return runWithPreview(huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("💾 Cache — how verbose?").
@@ -49,7 +44,7 @@ func runCacheStep(state *WizardState) error {
 				Options(styleOptions("cache", cacheExamples)...).
 				Value(&state.CacheStyle),
 		),
-	))
+	), state)
 }
 
 func runGitStep(state *WizardState) error {
@@ -57,14 +52,14 @@ func runGitStep(state *WizardState) error {
 		"branch": "🌿 main",
 		"status": "🌿 main +1 ~9",
 	}
-	return run(huh.NewForm(
+	return runWithPreview(huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("🌿 Git — how verbose?").
 				Options(styleOptions("git", gitExamples)...).
 				Value(&state.GitStyle),
 		),
-	))
+	), state)
 }
 
 func runLinesStep(state *WizardState) error {
@@ -72,12 +67,12 @@ func runLinesStep(state *WizardState) error {
 		"summary": "📝 ±32",
 		"detail":  "📝 +24 -8",
 	}
-	return run(huh.NewForm(
+	return runWithPreview(huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("📝 Lines changed — how verbose?").
 				Options(styleOptions("lines_changed", linesExamples)...).
 				Value(&state.LinesStyle),
 		),
-	))
+	), state)
 }

@@ -2,12 +2,11 @@ package wizard
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/saars/claude-code-statusline/config"
-	"github.com/saars/claude-code-statusline/render"
 	"github.com/saars/claude-code-statusline/theme"
 )
 
@@ -24,45 +23,24 @@ func sortedThemeNames() []string {
 	return names
 }
 
-// themePreviewCfg is a compact config used to render theme previews.
-var themePreviewCfg = &config.Config{
-	Emojis: config.EmojiAll,
-	ContextBar: config.ContextBarConfig{
-		Style:      config.BarSolid,
-		Width:      10,
-		Thresholds: []int{70, 90},
-	},
-	Separator: config.SeparatorConfig{Character: "|"},
-	Lines: []config.LineConfig{
-		{Components: []string{"model", "context_bar", "cost"}},
-	},
-}
-
-// themePreview renders a sample status line using the given theme.
-func themePreview(name string) string {
-	th := theme.Get(name)
-	cfg := *themePreviewCfg
-	cfg.Theme = name
-	return render.RenderWithTheme(MockInput(), &cfg, th)
-}
-
 type themeSelectorModel struct {
 	names  []string
 	cursor int
 	done   bool
 	result string
+	state  *WizardState
 }
 
-func newThemeSelectorModel(current string) themeSelectorModel {
+func newThemeSelectorModel(state *WizardState) themeSelectorModel {
 	names := sortedThemeNames()
 	cursor := 0
 	for i, n := range names {
-		if n == current {
+		if n == state.Theme {
 			cursor = i
 			break
 		}
 	}
-	return themeSelectorModel{names: names, cursor: cursor}
+	return themeSelectorModel{names: names, cursor: cursor, state: state}
 }
 
 func (m themeSelectorModel) Init() tea.Cmd { return nil }
@@ -97,8 +75,13 @@ func (m themeSelectorModel) View() string {
 		return ""
 	}
 
+	// Build a preview state using the hovered theme.
+	hovered := *m.state
+	hovered.Theme = m.names[m.cursor]
+
 	var b strings.Builder
 
+	b.WriteString(previewBlock(&hovered))
 	b.WriteString("\n  " + csTitle.Render("🎨 Choose a color theme") + "\n\n")
 
 	for i, name := range m.names {
@@ -111,25 +94,25 @@ func (m themeSelectorModel) View() string {
 		b.WriteString(fmt.Sprintf("  %s%s\n", cursor, nameStyle.Render(name)))
 	}
 
-	// Live preview of the hovered theme.
-	b.WriteString("\n  " + csMuted.Render("preview: ") + themePreview(m.names[m.cursor]) + "\n")
 	b.WriteString("\n  " + csMuted.Render("↑/↓ navigate • enter select • ctrl+c cancel") + "\n")
-
 	return b.String()
 }
 
-// runThemeSelector runs the interactive theme selector and returns the chosen
-// theme name. Returns current if the user cancels.
-func runThemeSelector(current string) (string, error) {
-	m := newThemeSelectorModel(current)
+// runThemeSelector runs the interactive theme selector and writes the chosen
+// theme into state.Theme.
+func runThemeSelector(state *WizardState) error {
+	m := newThemeSelectorModel(state)
 	p := tea.NewProgram(m)
 	final, err := p.Run()
 	if err != nil {
-		return current, err
+		return err
 	}
 	result := final.(themeSelectorModel)
 	if result.result == "" {
-		return current, nil
+		// ctrl+c — treat as cancel
+		fmt.Println(subtitleStyle.Render("\nSetup cancelled."))
+		os.Exit(0)
 	}
-	return result.result, nil
+	state.Theme = result.result
+	return nil
 }

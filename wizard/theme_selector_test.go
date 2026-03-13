@@ -6,22 +6,28 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+func stateWithTheme(theme string) *WizardState {
+	s := DefaultState()
+	s.Theme = theme
+	return s
+}
+
 func TestThemeSelectorModel_DefaultsToCurrentTheme(t *testing.T) {
-	m := newThemeSelectorModel("nord")
+	m := newThemeSelectorModel(stateWithTheme("nord"))
 	if m.names[m.cursor] != "nord" {
 		t.Errorf("cursor at %q, want %q", m.names[m.cursor], "nord")
 	}
 }
 
 func TestThemeSelectorModel_DefaultsToFirstIfUnknown(t *testing.T) {
-	m := newThemeSelectorModel("nonexistent")
+	m := newThemeSelectorModel(stateWithTheme("nonexistent"))
 	if m.cursor != 0 {
 		t.Errorf("cursor = %d, want 0 for unknown theme", m.cursor)
 	}
 }
 
 func TestThemeSelectorModel_EnterReturnsSelection(t *testing.T) {
-	m := newThemeSelectorModel("default")
+	m := newThemeSelectorModel(stateWithTheme("default"))
 	// Move down to second theme
 	m, _ = applyThemeKey(m, tea.KeyDown)
 	m, _ = applyThemeKey(m, tea.KeyEnter)
@@ -34,7 +40,7 @@ func TestThemeSelectorModel_EnterReturnsSelection(t *testing.T) {
 }
 
 func TestThemeSelectorModel_CtrlCReturnsEmpty(t *testing.T) {
-	m := newThemeSelectorModel("default")
+	m := newThemeSelectorModel(stateWithTheme("default"))
 	m, _ = applyThemeKey(m, tea.KeyCtrlC)
 	if !m.done {
 		t.Fatal("expected done after ctrl+c")
@@ -45,7 +51,7 @@ func TestThemeSelectorModel_CtrlCReturnsEmpty(t *testing.T) {
 }
 
 func TestThemeSelectorModel_ArrowNavigation(t *testing.T) {
-	m := newThemeSelectorModel("default")
+	m := newThemeSelectorModel(stateWithTheme("default"))
 	if m.cursor != 0 {
 		t.Fatalf("initial cursor = %d, want 0", m.cursor)
 	}
@@ -62,7 +68,7 @@ func TestThemeSelectorModel_ArrowNavigation(t *testing.T) {
 }
 
 func TestThemeSelectorModel_ClampsAtBounds(t *testing.T) {
-	m := newThemeSelectorModel("default")
+	m := newThemeSelectorModel(stateWithTheme("default"))
 	// Up at top should stay at 0
 	m, _ = applyThemeKey(m, tea.KeyUp)
 	if m.cursor != 0 {
@@ -79,18 +85,18 @@ func TestThemeSelectorModel_ClampsAtBounds(t *testing.T) {
 }
 
 func TestThemeSelectorModel_ViewShowsPreview(t *testing.T) {
-	m := newThemeSelectorModel("default")
+	m := newThemeSelectorModel(stateWithTheme("default"))
 	view := m.View()
 	if view == "" {
 		t.Fatal("View() returned empty string")
 	}
-	if !containsAny(view, "preview:") {
-		t.Error("View() should contain preview label")
+	if !containsAny(view, "Preview") {
+		t.Error("View() should contain Preview section")
 	}
 }
 
 func TestThemeSelectorModel_ViewEmptyWhenDone(t *testing.T) {
-	m := newThemeSelectorModel("default")
+	m := newThemeSelectorModel(stateWithTheme("default"))
 	m, _ = applyThemeKey(m, tea.KeyEnter)
 	if m.View() != "" {
 		t.Error("View() should be empty when done")
@@ -98,7 +104,7 @@ func TestThemeSelectorModel_ViewEmptyWhenDone(t *testing.T) {
 }
 
 func TestThemeSelectorModel_ViewChangesWithCursor(t *testing.T) {
-	m := newThemeSelectorModel("default")
+	m := newThemeSelectorModel(stateWithTheme("default"))
 	view1 := m.View()
 	m, _ = applyThemeKey(m, tea.KeyDown)
 	view2 := m.View()
@@ -107,25 +113,23 @@ func TestThemeSelectorModel_ViewChangesWithCursor(t *testing.T) {
 	}
 }
 
-func TestThemePreview_AllThemes(t *testing.T) {
+func TestThemeSelectorModel_AllThemesRender(t *testing.T) {
 	for _, name := range sortedThemeNames() {
 		t.Run(name, func(t *testing.T) {
-			output := themePreview(name)
-			if output == "" {
-				t.Errorf("themePreview(%q) returned empty string", name)
-			}
-			if len(output) <= 10 {
-				t.Errorf("themePreview(%q) too short, expected styled output: %q", name, output)
+			m := newThemeSelectorModel(stateWithTheme(name))
+			view := m.View()
+			if view == "" {
+				t.Errorf("View() for theme %q returned empty string", name)
 			}
 		})
 	}
 }
 
-func TestThemePreview_DifferentThemesProduceDifferentOutput(t *testing.T) {
-	defaultOut := themePreview("default")
-	draculaOut := themePreview("dracula")
-	if defaultOut == draculaOut {
-		t.Error("expected different output for default vs dracula themes")
+func TestThemeSelectorModel_ViewChangesAcrossThemes(t *testing.T) {
+	m1 := newThemeSelectorModel(stateWithTheme("default"))
+	m2 := newThemeSelectorModel(stateWithTheme("dracula"))
+	if m1.View() == m2.View() {
+		t.Error("expected different views for default vs dracula themes")
 	}
 }
 

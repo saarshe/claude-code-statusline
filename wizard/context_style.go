@@ -2,6 +2,7 @@ package wizard
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -25,6 +26,7 @@ type contextStyleModel struct {
 	pct     float64
 	done    bool
 	result  string
+	state   *WizardState
 }
 
 var (
@@ -35,7 +37,8 @@ var (
 	csName     = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
 )
 
-func newContextStyleModel(current string) contextStyleModel {
+func newContextStyleModel(state *WizardState) contextStyleModel {
+	current := state.ContextStyle
 	choices := []contextStyleChoice{
 		{
 			label: "Percentage only",
@@ -96,7 +99,7 @@ func newContextStyleModel(current string) contextStyleModel {
 		}
 	}
 
-	return contextStyleModel{choices: choices, cursor: cursor, pct: 44.0}
+	return contextStyleModel{choices: choices, cursor: cursor, pct: 44.0, state: state}
 }
 
 // gradientBar renders a per-character gradient bar (green→yellow→red by position).
@@ -173,8 +176,13 @@ func (m contextStyleModel) View() string {
 		return ""
 	}
 
+	// Build a preview state using the hovered context style.
+	hovered := *m.state
+	hovered.ContextStyle = m.choices[m.cursor].value
+
 	var b strings.Builder
 
+	b.WriteString(previewBlock(&hovered))
 	b.WriteString("\n  " + csTitle.Render("📊 Context window — how verbose?") + "\n\n")
 
 	for i, c := range m.choices {
@@ -194,18 +202,21 @@ func (m contextStyleModel) View() string {
 	return b.String()
 }
 
-// runContextStyleSelector runs the animated context style selector and returns
-// the chosen value. Returns current if the user cancels.
-func runContextStyleSelector(current string) (string, error) {
-	m := newContextStyleModel(current)
+// runContextStyleSelector runs the animated context style selector and writes
+// the chosen value into state.ContextStyle.
+func runContextStyleSelector(state *WizardState) error {
+	m := newContextStyleModel(state)
 	p := tea.NewProgram(m)
 	final, err := p.Run()
 	if err != nil {
-		return current, err
+		return err
 	}
 	result := final.(contextStyleModel)
 	if result.result == "" {
-		return current, nil
+		// ctrl+c — treat as cancel
+		fmt.Println(subtitleStyle.Render("\nSetup cancelled."))
+		os.Exit(0)
 	}
-	return result.result, nil
+	state.ContextStyle = result.result
+	return nil
 }

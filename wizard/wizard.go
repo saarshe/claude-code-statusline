@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/saars/claude-code-statusline/components"
@@ -73,23 +74,16 @@ func Run(cfgPath, settingsPath string) error {
 		}
 	}
 
-	// ── Preview + confirm ────────────────────────────────────────────────────
-
-	fmt.Println()
-	fmt.Println(sectionStyle.Render("Preview"))
-	fmt.Println(subtitleStyle.Render(strings.Repeat("─", 50)))
-	fmt.Println(Preview(state))
-	fmt.Println(subtitleStyle.Render(strings.Repeat("─", 50)))
-	fmt.Println()
+	// ── Confirm ──────────────────────────────────────────────────────────────
 
 	confirm := true
-	if err := run(huh.NewForm(
+	if err := runWithPreview(huh.NewForm(
 		huh.NewGroup(
 			huh.NewConfirm().
 				Title("💾 Save this configuration?").
 				Value(&confirm),
 		),
-	)); err != nil {
+	), state); err != nil {
 		return err
 	}
 	if !confirm {
@@ -161,6 +155,61 @@ func run(form *huh.Form) error {
 		os.Exit(0)
 	}
 	return err
+}
+
+// previewBlock returns the preview header rendered as a string for embedding
+// in Bubble Tea views.
+func previewBlock(state *WizardState) string {
+	return "\n" + sectionStyle.Render("Preview") + "\n" +
+		subtitleStyle.Render(strings.Repeat("─", 50)) + "\n" +
+		Preview(state) + "\n" +
+		subtitleStyle.Render(strings.Repeat("─", 50)) + "\n"
+}
+
+// previewFormModel wraps a huh.Form in a Bubble Tea model that renders a live
+// status-line preview above the form. The preview reflects state on every frame.
+type previewFormModel struct {
+	form  *huh.Form
+	state *WizardState
+}
+
+func (m previewFormModel) Init() tea.Cmd { return m.form.Init() }
+
+func (m previewFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	f, cmd := m.form.Update(msg)
+	m.form = f.(*huh.Form)
+	if m.form.State != huh.StateNormal {
+		return m, tea.Quit
+	}
+	return m, cmd
+}
+
+func (m previewFormModel) View() string {
+	if m.form.State != huh.StateNormal {
+		return ""
+	}
+	return previewBlock(m.state) + m.form.View()
+}
+
+// runWithPreview runs a huh form wrapped in a Bubble Tea program that shows a
+// live status-line preview above the form on every render frame.
+func runWithPreview(form *huh.Form, state *WizardState) error {
+	km := huh.NewDefaultKeyMap()
+	km.MultiSelect.Toggle = key.NewBinding(
+		key.WithKeys(" ", "x"),
+		key.WithHelp("x/space", "toggle"),
+	)
+	form = form.WithTheme(huh.ThemeCharm()).WithKeyMap(km)
+	p := tea.NewProgram(previewFormModel{form: form, state: state})
+	final, err := p.Run()
+	if err != nil {
+		return err
+	}
+	if final.(previewFormModel).form.State == huh.StateAborted {
+		fmt.Println(subtitleStyle.Render("\nSetup cancelled."))
+		os.Exit(0)
+	}
+	return nil
 }
 
 // opt renders a two-column option label: name in cyan, example in gray.
