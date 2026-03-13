@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/saars/claude-code-statusline/components"
 	"github.com/saars/claude-code-statusline/config"
 )
 
@@ -91,11 +92,29 @@ func (s *WizardState) hasFeature(key string) bool {
 	return false
 }
 
+// featureStyleValue returns the user's chosen style value for a feature.
+func (s *WizardState) featureStyleValue(feature string) string {
+	switch feature {
+	case "context":
+		return s.ContextStyle
+	case "tokens":
+		return s.TokenStyle
+	case "cache":
+		return s.CacheStyle
+	case "lines_changed":
+		return s.LinesStyle
+	case "git":
+		return s.GitStyle
+	default:
+		return ""
+	}
+}
+
 // featureToComponent maps a feature key to its component key, resolving style
 // choices (e.g. "context" + ContextStyle="block" → "context_bar").
 func (s *WizardState) featureToComponent(feature string) string {
-	switch feature {
-	case "context":
+	// Context is special: multiple style values map to the same component key.
+	if feature == "context" {
 		switch s.ContextStyle {
 		case "pct":
 			return "context_pct"
@@ -106,35 +125,21 @@ func (s *WizardState) featureToComponent(feature string) string {
 		default:
 			return "context_bar"
 		}
-	case "tokens":
-		switch s.TokenStyle {
-		case "turn_cache":
-			return "tokens_cache"
-		case "session":
-			return "tokens_session"
-		case "full":
-			return "tokens_full"
-		default:
-			return "tokens"
-		}
-	case "cache":
-		if s.CacheStyle == "hit" {
-			return "cache_hit"
-		}
-		return "cache"
-	case "lines_changed":
-		if s.LinesStyle == "summary" {
-			return "lines_summary"
-		}
-		return "lines_changed"
-	case "git":
-		if s.GitStyle == "branch" {
-			return "git_branch"
-		}
-		return "git_status"
-	default:
-		return feature // all other feature keys match component keys 1:1
 	}
+
+	// For features with style options, look up via FeatureStyles.
+	if styles, ok := components.FeatureStyles[feature]; ok {
+		styleVal := s.featureStyleValue(feature)
+		for _, so := range styles {
+			if so.Value == styleVal {
+				return string(so.ComponentKey)
+			}
+		}
+		// Default to first option if style value doesn't match.
+		return string(styles[0].ComponentKey)
+	}
+
+	return feature // all other feature keys match component keys 1:1
 }
 
 // contextBarStyle maps ContextStyle to a config.BarStyle.

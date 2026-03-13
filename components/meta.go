@@ -55,6 +55,36 @@ func GetMeta(key ComponentKey) Meta {
 	return componentMeta[key]
 }
 
+// StyleOption maps a wizard style value to its resolved component key.
+type StyleOption struct {
+	Value        string       // wizard style value (e.g. "turn", "hit")
+	ComponentKey ComponentKey // resolved component key (e.g. "tokens", "cache_hit")
+}
+
+// FeatureStyles maps feature keys to their available style options.
+// Features not listed here have a 1:1 mapping (feature key == component key).
+// Context is excluded because its styles don't map 1:1 to component keys.
+var FeatureStyles = map[string][]StyleOption{
+	"tokens": {
+		{"turn", "tokens"},
+		{"turn_cache", "tokens_cache"},
+		{"session", "tokens_session"},
+		{"full", "tokens_full"},
+	},
+	"cache": {
+		{"hit", "cache_hit"},
+		{"counts", "cache"},
+	},
+	"git": {
+		{"branch", "git_branch"},
+		{"status", "git_status"},
+	},
+	"lines_changed": {
+		{"summary", "lines_summary"},
+		{"detail", "lines_changed"},
+	},
+}
+
 // FeatureMeta maps wizard feature keys (which may group multiple components)
 // to display metadata. The wizard uses these for its selection UI.
 var FeatureMeta = []struct {
