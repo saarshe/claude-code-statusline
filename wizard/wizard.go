@@ -276,7 +276,7 @@ func run(form *huh.Form) error {
 
 // opt renders a two-column option label: name in cyan, example in gray.
 func opt(name, example string) string {
-	return optNameStyle.Render(fmt.Sprintf("%-16s", name)) + optDescStyle.Render(example)
+	return optNameStyle.Render(fmt.Sprintf("%-20s", name)) + optDescStyle.Render(example)
 }
 
 // barPreview renders a colored gradient bar for wizard option labels.
@@ -300,7 +300,7 @@ func barPreview(filled, total int) string {
 func featureOptions() []huh.Option[string] {
 	opts := make([]huh.Option[string], len(components.FeatureMeta))
 	for i, f := range components.FeatureMeta {
-		label := f.Meta.Emoji + " " + optNameStyle.Render(fmt.Sprintf("%-16s", f.Meta.Name)) + optDescStyle.Render(f.Meta.Desc)
+		label := f.Meta.Emoji + " " + optNameStyle.Render(fmt.Sprintf("%-20s", f.Meta.Name)) + optDescStyle.Render(f.Meta.Desc)
 		opts[i] = huh.NewOption(label, f.Key)
 	}
 	return opts
