@@ -27,6 +27,7 @@ type themeSelectorModel struct {
 	names  []string
 	cursor int
 	done   bool
+	goBack bool
 	result string
 	state  *WizardState
 }
@@ -59,6 +60,10 @@ func (m themeSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case tea.KeyEnter:
 			m.result = m.names[m.cursor]
+			m.done = true
+			return m, tea.Quit
+		case tea.KeyEsc:
+			m.goBack = true
 			m.done = true
 			return m, tea.Quit
 		case tea.KeyCtrlC:
@@ -94,7 +99,7 @@ func (m themeSelectorModel) View() string {
 		b.WriteString(fmt.Sprintf("  %s%s\n", cursor, nameStyle.Render(name)))
 	}
 
-	b.WriteString("\n  " + csMuted.Render("↑/↓ navigate • enter select • ctrl+c cancel") + "\n")
+	b.WriteString("\n  " + csMuted.Render("↑/↓ navigate • enter select • esc back • ctrl+c cancel") + "\n")
 	return b.String()
 }
 
@@ -108,6 +113,9 @@ func runThemeSelector(state *WizardState) error {
 		return err
 	}
 	result := final.(themeSelectorModel)
+	if result.goBack {
+		return errGoBack
+	}
 	if result.result == "" {
 		// ctrl+c — treat as cancel
 		fmt.Println(subtitleStyle.Render("\nSetup cancelled."))

@@ -36,6 +36,10 @@ var (
 	// errNoFeatures is a sentinel returned by the features step when the user
 	// selects nothing; Run treats this as a graceful cancellation.
 	errNoFeatures = errors.New("no features selected")
+
+	// errGoBack is a sentinel returned by a step when the user presses Escape
+	// to navigate back to the previous step.
+	errGoBack = errors.New("go back")
 )
 
 // hint renders a single "key → action" pair with distinct colors.
@@ -57,21 +61,28 @@ func Run(cfgPath, settingsPath string) error {
 	state := DefaultState()
 
 	fmt.Println(headerStyle.Render("claude-code-statusline setup"))
-	fmt.Println(hint("x/space", "toggle") + hintSep + hint("enter", "submit (not select!)") + hintSep + hint("ctrl+c", "cancel"))
+	fmt.Println(hint("x/space", "toggle") + hintSep + hint("enter", "submit (not select!)") + hintSep + hint("esc", "back") + hintSep + hint("ctrl+c", "cancel"))
 	fmt.Println()
 
 	// ── Interactive steps ────────────────────────────────────────────────────
 
-	for _, step := range Steps {
+	for i := 0; i < len(Steps); {
+		step := Steps[i]
 		if step.ShouldRun != nil && !step.ShouldRun(state) {
+			i++
 			continue
 		}
 		if err := step.Run(state); err != nil {
+			if errors.Is(err, errGoBack) {
+				i = prevRunnableStep(Steps, i, state)
+				continue
+			}
 			if errors.Is(err, errNoFeatures) {
 				return nil
 			}
 			return err
 		}
+		i++
 	}
 
 	// ── Confirm ──────────────────────────────────────────────────────────────
@@ -157,6 +168,18 @@ func run(form *huh.Form) error {
 	return err
 }
 
+// prevRunnableStep returns the index of the previous step that would run
+// given the current state. If there is no such step, it returns the current
+// index (i.e. stay on the first step).
+func prevRunnableStep(steps []Step, cur int, state *WizardState) int {
+	for j := cur - 1; j >= 0; j-- {
+		if steps[j].ShouldRun == nil || steps[j].ShouldRun(state) {
+			return j
+		}
+	}
+	return cur
+}
+
 // previewBlock returns the preview header rendered as a string for embedding
 // in Bubble Tea views.
 func previewBlock(state *WizardState) string {
@@ -169,23 +192,31 @@ func previewBlock(state *WizardState) string {
 // previewFormModel wraps a huh.Form in a Bubble Tea model that renders a live
 // status-line preview above the form. The preview reflects state on every frame.
 type previewFormModel struct {
-	form  *huh.Form
-	state *WizardState
+	form   *huh.Form
+	state  *WizardState
+	goBack bool
 }
 
 func (m previewFormModel) Init() tea.Cmd { return m.form.Init() }
 
 func (m previewFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Let the form process the message first so that escape sequences
+	// (arrow keys, colors, etc.) are consumed properly by Bubble Tea.
 	f, cmd := m.form.Update(msg)
 	m.form = f.(*huh.Form)
 	if m.form.State != huh.StateNormal {
+		return m, tea.Quit
+	}
+	// After the form has processed, treat a bare Escape as "go back".
+	if msg, ok := msg.(tea.KeyMsg); ok && msg.Type == tea.KeyEsc {
+		m.goBack = true
 		return m, tea.Quit
 	}
 	return m, cmd
 }
 
 func (m previewFormModel) View() string {
-	if m.form.State != huh.StateNormal {
+	if m.goBack || m.form.State != huh.StateNormal {
 		return ""
 	}
 	return previewBlock(m.state) + m.form.View()
@@ -205,7 +236,11 @@ func runWithPreview(form *huh.Form, state *WizardState) error {
 	if err != nil {
 		return err
 	}
-	if final.(previewFormModel).form.State == huh.StateAborted {
+	fm := final.(previewFormModel)
+	if fm.goBack {
+		return errGoBack
+	}
+	if fm.form.State == huh.StateAborted {
 		fmt.Println(subtitleStyle.Render("\nSetup cancelled."))
 		os.Exit(0)
 	}

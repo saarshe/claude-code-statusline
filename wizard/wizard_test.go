@@ -409,6 +409,59 @@ func TestWizardState_Theme_ToTOML(t *testing.T) {
 	}
 }
 
+func TestPrevRunnableStep_GoesToPreviousStep(t *testing.T) {
+	steps := []Step{
+		{Run: func(*WizardState) error { return nil }},
+		{Run: func(*WizardState) error { return nil }},
+		{Run: func(*WizardState) error { return nil }},
+	}
+	state := DefaultState()
+	got := prevRunnableStep(steps, 2, state)
+	if got != 1 {
+		t.Errorf("prevRunnableStep(steps, 2) = %d, want 1", got)
+	}
+}
+
+func TestPrevRunnableStep_SkipsNonRunnable(t *testing.T) {
+	never := func(*WizardState) bool { return false }
+	steps := []Step{
+		{Run: func(*WizardState) error { return nil }},
+		{ShouldRun: never, Run: func(*WizardState) error { return nil }},
+		{Run: func(*WizardState) error { return nil }},
+	}
+	state := DefaultState()
+	got := prevRunnableStep(steps, 2, state)
+	if got != 0 {
+		t.Errorf("prevRunnableStep(steps, 2) = %d, want 0 (skipping non-runnable)", got)
+	}
+}
+
+func TestPrevRunnableStep_StaysOnFirstStep(t *testing.T) {
+	steps := []Step{
+		{Run: func(*WizardState) error { return nil }},
+		{Run: func(*WizardState) error { return nil }},
+	}
+	state := DefaultState()
+	got := prevRunnableStep(steps, 0, state)
+	if got != 0 {
+		t.Errorf("prevRunnableStep(steps, 0) = %d, want 0", got)
+	}
+}
+
+func TestPrevRunnableStep_AllPreviousSkipped(t *testing.T) {
+	never := func(*WizardState) bool { return false }
+	steps := []Step{
+		{ShouldRun: never, Run: func(*WizardState) error { return nil }},
+		{ShouldRun: never, Run: func(*WizardState) error { return nil }},
+		{Run: func(*WizardState) error { return nil }},
+	}
+	state := DefaultState()
+	got := prevRunnableStep(steps, 2, state)
+	if got != 2 {
+		t.Errorf("prevRunnableStep(steps, 2) = %d, want 2 (no runnable previous step)", got)
+	}
+}
+
 func TestWizardState_Theme_RoundTrip(t *testing.T) {
 	state := &WizardState{
 		Features: []string{"model", "cost"},

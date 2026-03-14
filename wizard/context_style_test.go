@@ -62,6 +62,18 @@ func TestContextStyleModel_TickAdvancesPct(t *testing.T) {
 	}
 }
 
+func TestContextStyleModel_EscSetsGoBack(t *testing.T) {
+	m := newContextStyleModel(stateWithContextStyle("pct"))
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	result := updated.(contextStyleModel)
+	if !result.done {
+		t.Error("expected done=true after esc")
+	}
+	if !result.goBack {
+		t.Error("expected goBack=true after esc")
+	}
+}
+
 func TestContextStyleModel_ViewIsNonEmpty(t *testing.T) {
 	m := newContextStyleModel(stateWithContextStyle("block"))
 	view := m.View()
