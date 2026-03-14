@@ -25,6 +25,7 @@ type contextStyleModel struct {
 	cursor  int
 	pct     float64
 	done    bool
+	goBack  bool
 	result  string
 	state   *WizardState
 }
@@ -161,6 +162,10 @@ func (m contextStyleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.result = m.choices[m.cursor].value
 			m.done = true
 			return m, tea.Quit
+		case tea.KeyEsc:
+			m.goBack = true
+			m.done = true
+			return m, tea.Quit
 		case tea.KeyCtrlC:
 			m.result = ""
 			m.done = true
@@ -198,7 +203,7 @@ func (m contextStyleModel) View() string {
 		b.WriteString(fmt.Sprintf("  %s%s  %s\n", cursor, name, example))
 	}
 
-	b.WriteString("\n  " + csMuted.Render("↑/↓ navigate • enter select • ctrl+c cancel") + "\n")
+	b.WriteString(selectorHints())
 	return b.String()
 }
 
@@ -212,6 +217,9 @@ func runContextStyleSelector(state *WizardState) error {
 		return err
 	}
 	result := final.(contextStyleModel)
+	if result.goBack {
+		return errGoBack
+	}
 	if result.result == "" {
 		// ctrl+c — treat as cancel
 		fmt.Println(subtitleStyle.Render("\nSetup cancelled."))

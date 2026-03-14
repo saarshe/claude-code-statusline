@@ -39,6 +39,17 @@ func TestThemeSelectorModel_EnterReturnsSelection(t *testing.T) {
 	}
 }
 
+func TestThemeSelectorModel_EscSetsGoBack(t *testing.T) {
+	m := newThemeSelectorModel(stateWithTheme("default"))
+	m, _ = applyThemeKey(m, tea.KeyEsc)
+	if !m.done {
+		t.Fatal("expected done after esc")
+	}
+	if !m.goBack {
+		t.Fatal("expected goBack after esc")
+	}
+}
+
 func TestThemeSelectorModel_CtrlCReturnsEmpty(t *testing.T) {
 	m := newThemeSelectorModel(stateWithTheme("default"))
 	m, _ = applyThemeKey(m, tea.KeyCtrlC)
