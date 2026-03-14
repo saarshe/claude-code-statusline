@@ -203,7 +203,7 @@ func (m contextStyleModel) View() string {
 		b.WriteString(fmt.Sprintf("  %s%s  %s\n", cursor, name, example))
 	}
 
-	b.WriteString("\n  " + csMuted.Render("↑/↓ navigate • enter select • esc back • ctrl+c cancel") + "\n")
+	b.WriteString(selectorHints())
 	return b.String()
 }
 

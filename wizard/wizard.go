@@ -180,6 +180,11 @@ func prevRunnableStep(steps []Step, cur int, state *WizardState) int {
 	return cur
 }
 
+// selectorHints returns the help line used by custom Bubble Tea selectors.
+func selectorHints() string {
+	return "\n  " + csMuted.Render("↑/↓ navigate • enter select • esc back • ctrl+c cancel") + "\n"
+}
+
 // previewBlock returns the preview header rendered as a string for embedding
 // in Bubble Tea views.
 func previewBlock(state *WizardState) string {

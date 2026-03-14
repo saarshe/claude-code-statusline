@@ -99,7 +99,7 @@ func (m themeSelectorModel) View() string {
 		b.WriteString(fmt.Sprintf("  %s%s\n", cursor, nameStyle.Render(name)))
 	}
 
-	b.WriteString("\n  " + csMuted.Render("↑/↓ navigate • enter select • esc back • ctrl+c cancel") + "\n")
+	b.WriteString(selectorHints())
 	return b.String()
 }
 
