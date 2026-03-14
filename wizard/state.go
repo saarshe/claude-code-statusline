@@ -65,9 +65,9 @@ var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration"}
 func DefaultState() *WizardState {
 	return &WizardState{
 		Theme:        "default",
-		Features:     []string{"model", "git", "context", "tokens", "cache", "cost"},
+		Features:     []string{"model", "git", "lines_changed", "directory", "agent", "worktree", "context", "tokens", "cache", "cost", "duration"},
 		ContextStyle: "solid",
-		TokenStyle:   "turn",
+		TokenStyle:   "full",
 		CacheStyle:   "counts",
 		LinesStyle:   "detail",
 		GitStyle:     "status",
