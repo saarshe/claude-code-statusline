@@ -3,7 +3,7 @@ package wizard
 import "github.com/charmbracelet/huh"
 
 func runEmojisStep(state *WizardState) error {
-	return run(huh.NewForm(
+	return runWithPreview(huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("✨ Show emojis?").
@@ -13,5 +13,5 @@ func runEmojisStep(state *WizardState) error {
 				).
 				Value(&state.Emojis),
 		),
-	))
+	), state)
 }

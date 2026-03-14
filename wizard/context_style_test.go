@@ -6,18 +6,21 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+func stateWithContextStyle(style string) *WizardState {
+	s := DefaultState()
+	s.ContextStyle = style
+	return s
+}
+
 func TestContextStyleModel_DefaultsToFirstChoice(t *testing.T) {
-	m := newContextStyleModel("block")
-	if m.cursor != 1 { // "block" is index 1 (after "pct")
-		// find where "block" lands — just ensure it selects a valid cursor
-		if m.cursor < 0 || m.cursor >= len(m.choices) {
-			t.Fatalf("cursor %d out of range [0, %d)", m.cursor, len(m.choices))
-		}
+	m := newContextStyleModel(stateWithContextStyle("block"))
+	if m.cursor < 0 || m.cursor >= len(m.choices) {
+		t.Fatalf("cursor %d out of range [0, %d)", m.cursor, len(m.choices))
 	}
 }
 
 func TestContextStyleModel_EnterReturnsSelection(t *testing.T) {
-	m := newContextStyleModel("pct")
+	m := newContextStyleModel(stateWithContextStyle("pct"))
 	m.cursor = 0 // "pct"
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	result := updated.(contextStyleModel)
@@ -30,7 +33,7 @@ func TestContextStyleModel_EnterReturnsSelection(t *testing.T) {
 }
 
 func TestContextStyleModel_ArrowMovesDown(t *testing.T) {
-	m := newContextStyleModel("pct")
+	m := newContextStyleModel(stateWithContextStyle("pct"))
 	m.cursor = 0
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
 	result := updated.(contextStyleModel)
@@ -40,7 +43,7 @@ func TestContextStyleModel_ArrowMovesDown(t *testing.T) {
 }
 
 func TestContextStyleModel_ArrowClampsAtBottom(t *testing.T) {
-	m := newContextStyleModel("pct")
+	m := newContextStyleModel(stateWithContextStyle("pct"))
 	m.cursor = len(m.choices) - 1
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
 	result := updated.(contextStyleModel)
@@ -50,7 +53,7 @@ func TestContextStyleModel_ArrowClampsAtBottom(t *testing.T) {
 }
 
 func TestContextStyleModel_TickAdvancesPct(t *testing.T) {
-	m := newContextStyleModel("block")
+	m := newContextStyleModel(stateWithContextStyle("block"))
 	m.pct = 10.0
 	updated, _ := m.Update(tickMsg{})
 	result := updated.(contextStyleModel)
@@ -60,7 +63,7 @@ func TestContextStyleModel_TickAdvancesPct(t *testing.T) {
 }
 
 func TestContextStyleModel_ViewIsNonEmpty(t *testing.T) {
-	m := newContextStyleModel("block")
+	m := newContextStyleModel(stateWithContextStyle("block"))
 	view := m.View()
 	if view == "" {
 		t.Error("expected non-empty view")
