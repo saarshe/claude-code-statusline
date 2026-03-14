@@ -22,9 +22,6 @@ var (
 	sectionStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("5"))
 	optNameStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
 	optDescStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	keyStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("3"))
-	actionStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	hintSep       = actionStyle.Render(" · ")
 
 	// bar preview colors — use RGB so they're vivid regardless of terminal theme
 	barGreen  = lipgloss.NewStyle().Foreground(lipgloss.Color("#22DD55"))
@@ -42,11 +39,6 @@ var (
 	errGoBack = errors.New("go back")
 )
 
-// hint renders a single "key → action" pair with distinct colors.
-func hint(k, action string) string {
-	return keyStyle.Render(k) + actionStyle.Render(" "+action)
-}
-
 // Run launches the interactive setup wizard. Pass empty strings for cfgPath
 // and settingsPath to use the default locations.
 func Run(cfgPath, settingsPath string) error {
@@ -61,8 +53,6 @@ func Run(cfgPath, settingsPath string) error {
 	state := DefaultState()
 
 	fmt.Println(headerStyle.Render("claude-code-statusline setup"))
-	fmt.Println(hint("x/space", "toggle") + hintSep + hint("enter", "submit (not select!)") + hintSep + hint("esc", "back") + hintSep + hint("ctrl+c", "cancel"))
-	fmt.Println()
 
 	// ── Interactive steps ────────────────────────────────────────────────────
 
@@ -188,7 +178,7 @@ func selectorHints() string {
 // previewBlock returns the preview header rendered as a string for embedding
 // in Bubble Tea views.
 func previewBlock(state *WizardState) string {
-	return "\n" + sectionStyle.Render("Preview") + "\n" +
+	return sectionStyle.Render("Preview") + "\n" +
 		subtitleStyle.Render(strings.Repeat("─", 50)) + "\n" +
 		Preview(state) + "\n" +
 		subtitleStyle.Render(strings.Repeat("─", 50)) + "\n"
