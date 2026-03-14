@@ -2,11 +2,15 @@ package wizard
 
 import (
 	"bytes"
+	"os"
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/saars/claude-code-statusline/components"
 	"github.com/saars/claude-code-statusline/config"
+	"github.com/saars/claude-code-statusline/render"
+	"golang.org/x/term"
 )
 
 // WizardState holds all choices collected across wizard steps.
@@ -160,43 +164,104 @@ func (s *WizardState) contextBarStyle() config.BarStyle {
 	}
 }
 
-// InferLayout distributes the selected features into rows:
-//   - Row 1 (identity): model, git, lines_changed, directory
-//   - Row 2 (metrics):  context, tokens, cache, cost, duration
-//
-// If only one category has selections, a single row is returned.
+// featureOrder defines the canonical display order for all features.
+// Identity features first, then stats — so the split point is natural
+// when we need to wrap to two lines.
+var featureOrder = append(append([]string{}, identityFeatures...), statsFeatures...)
+
+// InferLayout places all selected components on a single line, then
+// progressively splits the widest line in half until every line fits within
+// the terminal width (or each line has a single component).
 func (s *WizardState) InferLayout() [][]string {
 	featureSet := make(map[string]bool, len(s.Features))
 	for _, f := range s.Features {
 		featureSet[f] = true
 	}
 
-	var row1, row2 []string
-	for _, f := range identityFeatures {
+	// Collect all components in canonical order.
+	var all []string
+	for _, f := range featureOrder {
 		if featureSet[f] {
-			row1 = append(row1, s.featureToComponent(f))
+			all = append(all, s.featureToComponent(f))
 		}
 	}
-	for _, f := range statsFeatures {
-		if featureSet[f] {
-			row2 = append(row2, s.featureToComponent(f))
-		}
-	}
-
-	switch {
-	case len(row1) > 0 && len(row2) > 0:
-		return [][]string{row1, row2}
-	case len(row1) > 0:
-		return [][]string{row1}
-	case len(row2) > 0:
-		return [][]string{row2}
-	default:
+	if len(all) == 0 {
 		return nil
 	}
+
+	layout := [][]string{all}
+
+	// Progressively split the widest overflowing line until everything fits.
+	for layoutExceedsWidth(layout, s) {
+		idx := widestLine(layout, s)
+		if len(layout[idx]) <= 1 {
+			break // can't split a single-component line
+		}
+		mid := len(layout[idx]) / 2
+		left := layout[idx][:mid]
+		right := layout[idx][mid:]
+		// Replace the line with two halves.
+		newLayout := make([][]string, 0, len(layout)+1)
+		newLayout = append(newLayout, layout[:idx]...)
+		newLayout = append(newLayout, left, right)
+		newLayout = append(newLayout, layout[idx+1:]...)
+		layout = newLayout
+	}
+
+	return layout
+}
+
+// widestLine returns the index of the line with the greatest rendered width.
+func widestLine(layout [][]string, s *WizardState) int {
+	cfg := s.toConfigWithLayout(layout)
+	output := render.Render(MockInput(), cfg)
+	lines := strings.Split(output, "\n")
+
+	best, bestW := 0, 0
+	for i, line := range lines {
+		if i >= len(layout) {
+			break
+		}
+		w := lipgloss.Width(line)
+		if w > bestW {
+			best, bestW = i, w
+		}
+	}
+	return best
+}
+
+// termWidth returns the terminal width, defaulting to 80 if unavailable.
+func termWidth() int {
+	w, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil || w <= 0 {
+		return 80
+	}
+	return w
+}
+
+// layoutExceedsWidth checks if any line in the layout would be wider than the
+// terminal when rendered with mock data and the current wizard state.
+func layoutExceedsWidth(layout [][]string, s *WizardState) bool {
+	cfg := s.toConfigWithLayout(layout)
+	output := render.Render(MockInput(), cfg)
+	tw := termWidth()
+	for _, line := range strings.Split(output, "\n") {
+		if lipgloss.Width(line) > tw {
+			return true
+		}
+	}
+	return false
 }
 
 // ToConfig converts the wizard state to a *config.Config.
 func (s *WizardState) ToConfig() *config.Config {
+	return s.toConfigWithLayout(s.InferLayout())
+}
+
+// toConfigWithLayout builds a config using the given layout (list of component
+// rows) instead of calling InferLayout. This avoids recursion when
+// layoutExceedsWidth needs to render a candidate layout.
+func (s *WizardState) toConfigWithLayout(layout [][]string) *config.Config {
 	cfg := config.Default()
 	if s.Theme != "" {
 		cfg.Theme = s.Theme
@@ -209,7 +274,6 @@ func (s *WizardState) ToConfig() *config.Config {
 		cfg.ContextBar.Width = s.BarWidth
 	}
 
-	layout := s.InferLayout()
 	cfg.Lines = make([]config.LineConfig, len(layout))
 	for i, comps := range layout {
 		cfg.Lines[i] = config.LineConfig{Components: comps}

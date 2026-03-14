@@ -30,10 +30,6 @@ var (
 	barDim    = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	barPct    = lipgloss.NewStyle().Foreground(lipgloss.Color("#22DD55"))
 
-	// errNoFeatures is a sentinel returned by the features step when the user
-	// selects nothing; Run treats this as a graceful cancellation.
-	errNoFeatures = errors.New("no features selected")
-
 	// errGoBack is a sentinel returned by a step when the user presses Escape
 	// to navigate back to the previous step.
 	errGoBack = errors.New("go back")
@@ -66,9 +62,6 @@ func Run(cfgPath, settingsPath string) error {
 			if errors.Is(err, errGoBack) {
 				i = prevRunnableStep(Steps, i, state)
 				continue
-			}
-			if errors.Is(err, errNoFeatures) {
-				return nil
 			}
 			return err
 		}
