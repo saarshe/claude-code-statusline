@@ -21,6 +21,6 @@ func init() {
 		Warning:   bg("#000000", "#d4b44e"), // black on soft yellow
 		Danger:    bg("#ffffff", "#d14d4d"), // white on soft red
 		Muted:     Renderer.NewStyle().Foreground(lipgloss.Color("#666666")),
-		Separator: "",
+		Separator: " \ue0b6",
 	})
 }

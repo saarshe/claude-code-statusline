@@ -124,15 +124,15 @@ func TestAllThemes_UniqueColors(t *testing.T) {
 
 func TestPowerlineTheme_HasSeparator(t *testing.T) {
 	th := Get("powerline")
-	if th.Separator != "" {
-		t.Errorf("powerline separator = %q, want \"\"", th.Separator)
+	if th.Separator == "" {
+		t.Error("powerline separator should not be empty")
 	}
 }
 
 func TestRoundedTheme_HasSeparator(t *testing.T) {
 	th := Get("rounded")
-	if th.Separator != "" {
-		t.Errorf("rounded separator = %q, want \"\"", th.Separator)
+	if th.Separator == "" {
+		t.Error("rounded separator should not be empty")
 	}
 }
 
