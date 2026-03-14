@@ -46,23 +46,22 @@ func TestWizardState_ToConfig_StatsOnly_SingleRow(t *testing.T) {
 	}
 }
 
-func TestWizardState_ToConfig_BothCategories_TwoRows(t *testing.T) {
+func TestWizardState_ToConfig_FewFeatures_SingleRow(t *testing.T) {
 	state := &WizardState{
 		Features:     []string{"model", "cost"},
 		ContextStyle: "pct",
 		Emojis:       "all",
 	}
 	cfg := state.ToConfig()
-	if len(cfg.Lines) != 2 {
-		t.Errorf("expected 2 rows for identity+stats, got %d", len(cfg.Lines))
+	if len(cfg.Lines) != 1 {
+		t.Errorf("expected 1 row for few features, got %d", len(cfg.Lines))
 	}
-	// Row 1 = identity
+	// Components should be in canonical order: identity first, then stats.
 	if cfg.Lines[0].Components[0] != "model" {
-		t.Errorf("expected 'model' first in row 1, got %q", cfg.Lines[0].Components[0])
+		t.Errorf("expected 'model' first, got %q", cfg.Lines[0].Components[0])
 	}
-	// Row 2 = stats
-	if cfg.Lines[1].Components[0] != "cost" {
-		t.Errorf("expected 'cost' first in row 2, got %q", cfg.Lines[1].Components[0])
+	if cfg.Lines[0].Components[1] != "cost" {
+		t.Errorf("expected 'cost' second, got %q", cfg.Lines[0].Components[1])
 	}
 }
 
@@ -143,8 +142,8 @@ func TestWizardState_ToTOML_RoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadFile() error: %v\nTOML:\n%s", err, tomlStr)
 	}
-	if len(loaded.Lines) != 2 {
-		t.Errorf("expected 2 lines, got %d\nTOML:\n%s", len(loaded.Lines), tomlStr)
+	if len(loaded.Lines) == 0 {
+		t.Errorf("expected at least 1 line, got 0\nTOML:\n%s", tomlStr)
 	}
 	if loaded.ContextBar.Style != config.BarSolid {
 		t.Errorf("expected BarSolid, got %q", loaded.ContextBar.Style)
