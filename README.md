@@ -46,6 +46,21 @@ claude-code-statusline init
 
 This lets you pick which components to show, choose a theme, and automatically wires it into Claude Code's `settings.json`.
 
+## How it works
+
+Claude Code supports a custom [status line](https://docs.anthropic.com/en/docs/claude-code/status-line) program. On every assistant response, it pipes a JSON blob (model, tokens, cost, context, etc.) to stdin of the configured command. This tool reads that JSON and renders a styled, multi-line status bar.
+
+The wizard adds the following to your `~/.claude/settings.json`:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "claude-code-statusline"
+  }
+}
+```
+
 ## Configuration
 
 Config lives at `~/.claude-code-statusline/config.toml`. The wizard generates this for you, but you can edit it manually.
