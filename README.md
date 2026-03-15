@@ -2,6 +2,28 @@
 
 A customizable status line for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Shows model, context usage, tokens, cost, git status, and more — right in your terminal.
 
+## Features
+
+📊 **Context window** — visual progress bar with color-coded thresholds (block, solid, ASCII, gradient, or percent)
+
+🤖 **Model info** — see which Claude model is active
+
+🔢 **Token usage** — input/output counts, cache hit rates, session totals — four verbosity levels
+
+💰 **Cost tracking** — running session cost in USD
+
+🌿 **Git status** — current branch, modified/added file counts, lines changed
+
+⏱️ **Duration** — session elapsed time
+
+📁 **Directory** — current working directory
+
+🎨 **8 themes** — default, catppuccin, dracula, gruvbox, nord, tokyo-night, powerline, rounded
+
+📐 **Adaptive layout** — components flow across 1–3 lines, responsive to terminal width
+
+🧙 **Setup wizard** — interactive configurator with live preview, back navigation, and auto-wiring to Claude Code
+
 ## Install
 
 ```sh
