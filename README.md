@@ -2,6 +2,8 @@
 
 A customizable status line for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Shows model, context usage, tokens, cost, git status, and more — right in your terminal.
 
+![Status line example](assets/statusline.png)
+
 ## Features
 
 📊 **Context window** — visual progress bar with color-coded thresholds (block, solid, ASCII, gradient, or percent)
@@ -23,6 +25,8 @@ A customizable status line for [Claude Code](https://docs.anthropic.com/en/docs/
 📐 **Adaptive layout** — components flow across 1–3 lines, responsive to terminal width
 
 🧙 **Setup wizard** — interactive configurator with live preview, back navigation, and auto-wiring to Claude Code
+
+![Setup wizard](assets/wizard.gif)
 
 ## Install
 
