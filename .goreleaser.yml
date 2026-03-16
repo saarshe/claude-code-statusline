@@ -36,19 +36,18 @@ changelog:
       - "^test:"
       - "^chore:"
 
-# Uncomment when homebrew-tap repo and HOMEBREW_TAP_GITHUB_TOKEN are set up:
-# brews:
-#   - repository:
-#       owner: saars
-#       name: homebrew-tap
-#     name: claude-code-statusline
-#     homepage: https://github.com/saarshe/claude-code-statusline
-#     description: Customizable status line for Claude Code
-#     license: MIT
-#     install: |
-#       bin.install "claude-code-statusline"
-#     test: |
-#       assert_match version.to_s, shell_output("#{bin}/claude-code-statusline --version")
-#     caveats: |
-#       Run the setup wizard to get started:
-#         claude-code-statusline init
+brews:
+  - repository:
+      owner: saarshe
+      name: homebrew-tap
+    name: claude-code-statusline
+    homepage: https://github.com/saarshe/claude-code-statusline
+    description: Customizable status line for Claude Code
+    license: MIT
+    install: |
+      bin.install "claude-code-statusline"
+    test: |
+      assert_match version.to_s, shell_output("#{bin}/claude-code-statusline --version")
+    caveats: |
+      Run the setup wizard to get started:
+        claude-code-statusline init

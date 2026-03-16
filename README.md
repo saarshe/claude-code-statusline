@@ -30,6 +30,14 @@ A customizable status line for [Claude Code](https://docs.anthropic.com/en/docs/
 
 ## Install
 
+**Homebrew (macOS/Linux):**
+
+```sh
+brew install saarshe/tap/claude-code-statusline
+```
+
+**Go:**
+
 ```sh
 go install github.com/saarshe/claude-code-statusline@latest
 ```
