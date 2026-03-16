@@ -34,6 +34,8 @@ A customizable status line for [Claude Code](https://docs.anthropic.com/en/docs/
 go install github.com/saarshe/claude-code-statusline@latest
 ```
 
+> **Note:** Make sure `$HOME/go/bin` is in your PATH. Add `export PATH="$PATH:$HOME/go/bin"` to your shell config if needed.
+
 Or download a binary from [Releases](https://github.com/saarshe/claude-code-statusline/releases).
 
 ## Setup
