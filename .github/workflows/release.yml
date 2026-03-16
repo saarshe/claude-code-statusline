@@ -11,6 +11,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      COLORTERM: truecolor
     steps:
       - uses: actions/checkout@v4
         with:
