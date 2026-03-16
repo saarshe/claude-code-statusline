@@ -5,9 +5,9 @@ import (
 	"strings"
 	// exec is used by execInDir helper
 
-	"github.com/saars/claude-code-statusline/config"
-	"github.com/saars/claude-code-statusline/schema"
-	"github.com/saars/claude-code-statusline/theme"
+	"github.com/saarshe/claude-code-statusline/config"
+	"github.com/saarshe/claude-code-statusline/schema"
+	"github.com/saarshe/claude-code-statusline/theme"
 )
 
 func execInDir(dir string, name string, args ...string) *exec.Cmd {

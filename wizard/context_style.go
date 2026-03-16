@@ -8,7 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/saars/claude-code-statusline/components"
+	"github.com/saarshe/claude-code-statusline/components"
 )
 
 // tickMsg is sent on each animation frame.

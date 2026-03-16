@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/saars/claude-code-statusline/theme"
+	"github.com/saarshe/claude-code-statusline/theme"
 )
 
 // sortedThemeNames returns theme names sorted alphabetically with "default" first.

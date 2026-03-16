@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/saars/claude-code-statusline/config"
-	"github.com/saars/claude-code-statusline/schema"
-	"github.com/saars/claude-code-statusline/theme"
+	"github.com/saarshe/claude-code-statusline/config"
+	"github.com/saarshe/claude-code-statusline/schema"
+	"github.com/saarshe/claude-code-statusline/theme"
 )
 
 type contextBarComponent struct{}
