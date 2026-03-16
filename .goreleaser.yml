@@ -40,6 +40,7 @@ brews:
   - repository:
       owner: saarshe
       name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     name: claude-code-statusline
     homepage: https://github.com/saarshe/claude-code-statusline
     description: Customizable status line for Claude Code
