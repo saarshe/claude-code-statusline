@@ -1,6 +1,6 @@
 package components
 
-import "github.com/saars/claude-code-statusline/config"
+import "github.com/saarshe/claude-code-statusline/config"
 
 // Meta holds display metadata for a component or feature.
 type Meta struct {

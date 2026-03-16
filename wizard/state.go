@@ -7,9 +7,9 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/saars/claude-code-statusline/components"
-	"github.com/saars/claude-code-statusline/config"
-	"github.com/saars/claude-code-statusline/render"
+	"github.com/saarshe/claude-code-statusline/components"
+	"github.com/saarshe/claude-code-statusline/config"
+	"github.com/saarshe/claude-code-statusline/render"
 	"golang.org/x/term"
 )
 

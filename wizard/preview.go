@@ -3,8 +3,8 @@ package wizard
 import (
 	"os"
 
-	"github.com/saars/claude-code-statusline/render"
-	"github.com/saars/claude-code-statusline/schema"
+	"github.com/saarshe/claude-code-statusline/render"
+	"github.com/saarshe/claude-code-statusline/schema"
 )
 
 // MockInput returns a realistic sample input for wizard preview rendering.

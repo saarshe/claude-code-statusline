@@ -41,7 +41,7 @@ changelog:
 #       owner: saars
 #       name: homebrew-tap
 #     name: claude-code-statusline
-#     homepage: https://github.com/saars/claude-code-statusline
+#     homepage: https://github.com/saarshe/claude-code-statusline
 #     description: Customizable status line for Claude Code
 #     license: MIT
 #     install: |

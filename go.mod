@@ -1,4 +1,4 @@
-module github.com/saars/claude-code-statusline
+module github.com/saarshe/claude-code-statusline
 
 go 1.26.1
 

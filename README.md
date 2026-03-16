@@ -31,10 +31,10 @@ A customizable status line for [Claude Code](https://docs.anthropic.com/en/docs/
 ## Install
 
 ```sh
-go install github.com/saars/claude-code-statusline@latest
+go install github.com/saarshe/claude-code-statusline@latest
 ```
 
-Or download a binary from [Releases](https://github.com/saars/claude-code-statusline/releases).
+Or download a binary from [Releases](https://github.com/saarshe/claude-code-statusline/releases).
 
 ## Setup
 

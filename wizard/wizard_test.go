@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/saars/claude-code-statusline/config"
+	"github.com/saarshe/claude-code-statusline/config"
 )
 
 func TestWizardState_HasContext_True(t *testing.T) {

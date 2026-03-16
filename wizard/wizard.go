@@ -11,9 +11,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/saars/claude-code-statusline/components"
-	"github.com/saars/claude-code-statusline/config"
-	"github.com/saars/claude-code-statusline/settings"
+	"github.com/saarshe/claude-code-statusline/components"
+	"github.com/saarshe/claude-code-statusline/config"
+	"github.com/saarshe/claude-code-statusline/settings"
 )
 
 var (

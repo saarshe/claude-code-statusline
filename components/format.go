@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/saars/claude-code-statusline/theme"
+	"github.com/saarshe/claude-code-statusline/theme"
 )
 
 // Clamp restricts v to the range [lo, hi].

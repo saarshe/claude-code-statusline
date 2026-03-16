@@ -3,10 +3,10 @@ package render
 import (
 	"strings"
 
-	"github.com/saars/claude-code-statusline/components"
-	"github.com/saars/claude-code-statusline/config"
-	"github.com/saars/claude-code-statusline/schema"
-	"github.com/saars/claude-code-statusline/theme"
+	"github.com/saarshe/claude-code-statusline/components"
+	"github.com/saarshe/claude-code-statusline/config"
+	"github.com/saarshe/claude-code-statusline/schema"
+	"github.com/saarshe/claude-code-statusline/theme"
 )
 
 func Render(input *schema.Input, cfg *config.Config) string {

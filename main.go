@@ -5,10 +5,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/saars/claude-code-statusline/config"
-	"github.com/saars/claude-code-statusline/render"
-	"github.com/saars/claude-code-statusline/schema"
-	"github.com/saars/claude-code-statusline/wizard"
+	"github.com/saarshe/claude-code-statusline/config"
+	"github.com/saarshe/claude-code-statusline/render"
+	"github.com/saarshe/claude-code-statusline/schema"
+	"github.com/saarshe/claude-code-statusline/wizard"
 )
 
 var version = "dev"
