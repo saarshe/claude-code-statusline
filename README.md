@@ -1,6 +1,6 @@
 # claude-code-statusline
 
-A customizable status line for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Shows model, context usage, tokens, cost, git status, and more — right in your terminal.
+A customizable status line for [Claude Code](https://code.claude.com/docs/en). Shows model, context usage, tokens, cost, git status, and more — right in your terminal.
 
 ![Status line example](assets/statusline.png)
 
@@ -58,7 +58,7 @@ This lets you pick which components to show, choose a theme, and automatically w
 
 ## How it works
 
-Claude Code supports a custom [status line](https://docs.anthropic.com/en/docs/claude-code/status-line) program. On every assistant response, it pipes a JSON blob (model, tokens, cost, context, etc.) to stdin of the configured command. This tool reads that JSON and renders a styled, multi-line status bar.
+Claude Code supports a custom [status line](https://code.claude.com/docs/en/statusline) program. On every assistant response, it pipes a JSON blob (model, tokens, cost, context, etc.) to stdin of the configured command. This tool reads that JSON and renders a styled, multi-line status bar.
 
 The wizard adds the following to your `~/.claude/settings.json`:
 
