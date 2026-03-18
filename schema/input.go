@@ -55,6 +55,16 @@ type Usage struct {
 	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
 }
 
+// ContextFillTokens returns the number of tokens currently occupying
+// the context window, computed from the most recent API call's usage.
+// Returns 0 if CurrentUsage is nil (before the first API call).
+func (c *Context) ContextFillTokens() int {
+	if c.CurrentUsage == nil {
+		return 0
+	}
+	return c.CurrentUsage.TotalInput()
+}
+
 // TotalInput returns the total input tokens for this turn, including
 // fresh input, cache reads, and cache creation tokens.
 func (u *Usage) TotalInput() int {

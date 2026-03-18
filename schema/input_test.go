@@ -252,6 +252,50 @@ func TestUsage_CacheHitPct(t *testing.T) {
 	}
 }
 
+func TestContext_ContextFillTokens(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  Context
+		want int
+	}{
+		{
+			"from current_usage",
+			Context{
+				TotalInputTokens: 9999, // should be ignored
+				CurrentUsage: &Usage{
+					InputTokens:              1000,
+					CacheReadInputTokens:     40000,
+					CacheCreationInputTokens: 2000,
+				},
+			},
+			43000,
+		},
+		{
+			"nil current_usage returns 0",
+			Context{
+				TotalInputTokens: 5000,
+				CurrentUsage:     nil,
+			},
+			0,
+		},
+		{
+			"zero usage",
+			Context{
+				CurrentUsage: &Usage{},
+			},
+			0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.ctx.ContextFillTokens()
+			if got != tt.want {
+				t.Errorf("ContextFillTokens() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestParse_UnknownFields(t *testing.T) {
 	json := `{
 		"cwd": "/test",

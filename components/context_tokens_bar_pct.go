@@ -8,13 +8,13 @@ import (
 	"github.com/saarshe/claude-code-statusline/theme"
 )
 
-type contextTokensBarComponent struct{}
+type contextTokensBarPctComponent struct{}
 
-func init() { Register(&contextTokensBarComponent{}) }
+func init() { Register(&contextTokensBarPctComponent{}) }
 
-func (c *contextTokensBarComponent) Key() ComponentKey { return "context_tokens_bar" }
+func (c *contextTokensBarPctComponent) Key() ComponentKey { return "context_tokens_bar_pct" }
 
-func (c *contextTokensBarComponent) Render(data *schema.Input, cfg *config.Config, th *theme.Theme) string {
+func (c *contextTokensBarPctComponent) Render(data *schema.Input, cfg *config.Config, th *theme.Theme) string {
 	cw := data.ContextWindow
 	if cw.ContextWindowSize == 0 || cw.CurrentUsage == nil {
 		return ""
@@ -34,5 +34,11 @@ func (c *contextTokensBarComponent) Render(data *schema.Input, cfg *config.Confi
 	max := HumanizeTokens(cw.ContextWindowSize)
 	style := ContextStyle(th, pct, cfg.ContextBar.Thresholds)
 
-	return style.Render(fmt.Sprintf("%s%s / %s", prefix, used, max)) + " " + bar
+	tokens := style.Render(fmt.Sprintf("%s%s / %s", prefix, used, max))
+	pctStr := style.Render(fmt.Sprintf("%.0f%%", pct))
+
+	if cfg.ContextBar.Style == config.BarGradient {
+		return tokens + " " + bar + " " + pctStr
+	}
+	return tokens + " " + style.Render(bar) + " " + pctStr
 }
