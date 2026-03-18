@@ -16,12 +16,12 @@ func (c *contextTokensComponent) Key() ComponentKey { return "context_tokens" }
 
 func (c *contextTokensComponent) Render(data *schema.Input, cfg *config.Config, th *theme.Theme) string {
 	cw := data.ContextWindow
-	if cw.ContextWindowSize == 0 {
+	if cw.ContextWindowSize == 0 || cw.CurrentUsage == nil {
 		return ""
 	}
 
 	prefix := GetMeta(c.Key()).Prefix(cfg)
-	used := HumanizeTokens(cw.TotalInputTokens)
+	used := HumanizeTokens(cw.ContextFillTokens())
 	max := HumanizeTokens(cw.ContextWindowSize)
 
 	style := th.Success

@@ -130,6 +130,8 @@ func (s *WizardState) featureToComponent(feature string) string {
 			return "context_tokens"
 		case "tokens_bar":
 			return "context_tokens_bar"
+		case "tokens_bar_pct":
+			return "context_tokens_bar_pct"
 		default:
 			return "context_bar"
 		}

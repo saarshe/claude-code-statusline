@@ -66,6 +66,15 @@ func newContextStyleModel(state *WizardState) contextStyleModel {
 			},
 		},
 		{
+			label: "Tokens + bar + %",
+			value: "tokens_bar_pct",
+			renderEx: func(pct float64) string {
+				used := int(pct / 100 * 200)
+				return csMuted.Render(fmt.Sprintf("%dk / 200k ", used)) +
+					gradientBar(pct) + " " + thresholdColor(pct).Render(fmt.Sprintf("%.0f%%", pct))
+			},
+		},
+		{
 			label: "Gradient bar",
 			value: "gradient",
 			renderEx: func(pct float64) string {
