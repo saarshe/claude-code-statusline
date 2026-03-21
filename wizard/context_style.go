@@ -21,14 +21,13 @@ type contextStyleChoice struct {
 }
 
 type contextStyleModel struct {
-	choices      []contextStyleChoice
-	cursor       int
-	pct          float64
-	done         bool
-	goBack       bool
-	result       string
-	state        *WizardState
-	cachedPreview string // re-rendered only when cursor changes
+	choices []contextStyleChoice
+	cursor  int
+	pct     float64
+	done    bool
+	goBack  bool
+	result  string
+	preview previewCache
 }
 
 var (
@@ -110,17 +109,14 @@ func newContextStyleModel(state *WizardState) contextStyleModel {
 		}
 	}
 
-	m := contextStyleModel{choices: choices, cursor: cursor, pct: 44.0, state: state}
-	m.cachedPreview = m.renderPreview()
+	m := contextStyleModel{choices: choices, cursor: cursor, pct: 44.0, preview: newPreviewCache(state)}
+	m.refreshPreview()
 	return m
 }
 
-// renderPreview builds the preview block for the currently hovered style.
-func (m *contextStyleModel) renderPreview() string {
-	hovered := *m.state
-	hovered.ContextStyle = m.choices[m.cursor].value
-	hovered.InvalidateLayout()
-	return previewBlock(&hovered)
+func (m *contextStyleModel) refreshPreview() {
+	value := m.choices[m.cursor].value
+	m.preview.Refresh(func(s *WizardState) { s.ContextStyle = value })
 }
 
 // gradientBar renders a per-character gradient bar (green→yellow→red by position).
@@ -169,8 +165,7 @@ func (m contextStyleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tick()
 
 	case tea.WindowSizeMsg:
-		m.state.InvalidateLayout()
-		m.cachedPreview = m.renderPreview()
+		m.preview.HandleResize(msg)
 		return m, nil
 
 	case tea.KeyMsg:
@@ -178,12 +173,12 @@ func (m contextStyleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyUp:
 			if m.cursor > 0 {
 				m.cursor--
-				m.cachedPreview = m.renderPreview()
+				m.refreshPreview()
 			}
 		case tea.KeyDown:
 			if m.cursor < len(m.choices)-1 {
 				m.cursor++
-				m.cachedPreview = m.renderPreview()
+				m.refreshPreview()
 			}
 		case tea.KeyEnter:
 			m.result = m.choices[m.cursor].value
@@ -210,7 +205,7 @@ func (m contextStyleModel) View() string {
 
 	var b strings.Builder
 
-	b.WriteString(m.cachedPreview)
+	b.WriteString(m.preview.String())
 	b.WriteString("\n  " + csTitle.Render("📊 Context window — how verbose?") + "\n\n")
 
 	for i, c := range m.choices {

@@ -181,17 +181,15 @@ func previewBlock(state *WizardState) string {
 // status-line preview above the form. The preview is re-rendered only when user
 // input may have changed the state (key presses), not on internal ticks.
 type previewFormModel struct {
-	form          *huh.Form
-	state         *WizardState
-	goBack        bool
-	cachedPreview string
+	form    *huh.Form
+	goBack  bool
+	preview previewCache
 }
 
 func newPreviewFormModel(form *huh.Form, state *WizardState) previewFormModel {
 	return previewFormModel{
-		form:          form,
-		state:         state,
-		cachedPreview: previewBlock(state),
+		form:    form,
+		preview: newPreviewCache(state),
 	}
 }
 
@@ -205,20 +203,16 @@ func (m previewFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.form.State != huh.StateNormal {
 		return m, tea.Quit
 	}
-	// After the form has processed, treat a bare Escape as "go back".
-	switch msg.(type) {
+	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.(tea.KeyMsg).Type == tea.KeyEsc {
+		if msg.Type == tea.KeyEsc {
 			m.goBack = true
 			return m, tea.Quit
 		}
 		// User input may have changed state — refresh preview.
-		m.state.InvalidateLayout()
-		m.cachedPreview = previewBlock(m.state)
+		m.preview.Refresh(nil)
 	case tea.WindowSizeMsg:
-		// Terminal resized — recompute layout for new width.
-		m.state.InvalidateLayout()
-		m.cachedPreview = previewBlock(m.state)
+		m.preview.HandleResize(msg)
 	}
 	return m, cmd
 }
@@ -227,7 +221,7 @@ func (m previewFormModel) View() string {
 	if m.goBack || m.form.State != huh.StateNormal {
 		return ""
 	}
-	return m.cachedPreview + m.form.View()
+	return m.preview.String() + m.form.View()
 }
 
 // runWithPreview runs a huh form wrapped in a Bubble Tea program that shows a
