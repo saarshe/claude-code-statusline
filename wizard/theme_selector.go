@@ -24,12 +24,13 @@ func sortedThemeNames() []string {
 }
 
 type themeSelectorModel struct {
-	names  []string
-	cursor int
-	done   bool
-	goBack bool
-	result string
-	state  *WizardState
+	names         []string
+	cursor        int
+	done          bool
+	goBack        bool
+	result        string
+	state         *WizardState
+	cachedPreview string // re-rendered only when cursor changes
 }
 
 func newThemeSelectorModel(state *WizardState) themeSelectorModel {
@@ -41,22 +42,39 @@ func newThemeSelectorModel(state *WizardState) themeSelectorModel {
 			break
 		}
 	}
-	return themeSelectorModel{names: names, cursor: cursor, state: state}
+	m := themeSelectorModel{names: names, cursor: cursor, state: state}
+	m.cachedPreview = m.renderPreview()
+	return m
+}
+
+// renderPreview builds the preview block for the currently hovered theme.
+func (m *themeSelectorModel) renderPreview() string {
+	hovered := *m.state
+	hovered.Theme = m.names[m.cursor]
+	hovered.InvalidateLayout()
+	return previewBlock(&hovered)
 }
 
 func (m themeSelectorModel) Init() tea.Cmd { return nil }
 
 func (m themeSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.state.InvalidateLayout()
+		m.cachedPreview = m.renderPreview()
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyUp:
 			if m.cursor > 0 {
 				m.cursor--
+				m.cachedPreview = m.renderPreview()
 			}
 		case tea.KeyDown:
 			if m.cursor < len(m.names)-1 {
 				m.cursor++
+				m.cachedPreview = m.renderPreview()
 			}
 		case tea.KeyEnter:
 			m.result = m.names[m.cursor]
@@ -80,13 +98,9 @@ func (m themeSelectorModel) View() string {
 		return ""
 	}
 
-	// Build a preview state using the hovered theme.
-	hovered := *m.state
-	hovered.Theme = m.names[m.cursor]
-
 	var b strings.Builder
 
-	b.WriteString(previewBlock(&hovered))
+	b.WriteString(m.cachedPreview)
 	b.WriteString("\n  " + csTitle.Render("🎨 Choose a color theme") + "\n\n")
 
 	for i, name := range m.names {

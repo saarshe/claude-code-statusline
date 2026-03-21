@@ -21,13 +21,14 @@ type contextStyleChoice struct {
 }
 
 type contextStyleModel struct {
-	choices []contextStyleChoice
-	cursor  int
-	pct     float64
-	done    bool
-	goBack  bool
-	result  string
-	state   *WizardState
+	choices      []contextStyleChoice
+	cursor       int
+	pct          float64
+	done         bool
+	goBack       bool
+	result       string
+	state        *WizardState
+	cachedPreview string // re-rendered only when cursor changes
 }
 
 var (
@@ -109,7 +110,17 @@ func newContextStyleModel(state *WizardState) contextStyleModel {
 		}
 	}
 
-	return contextStyleModel{choices: choices, cursor: cursor, pct: 44.0, state: state}
+	m := contextStyleModel{choices: choices, cursor: cursor, pct: 44.0, state: state}
+	m.cachedPreview = m.renderPreview()
+	return m
+}
+
+// renderPreview builds the preview block for the currently hovered style.
+func (m *contextStyleModel) renderPreview() string {
+	hovered := *m.state
+	hovered.ContextStyle = m.choices[m.cursor].value
+	hovered.InvalidateLayout()
+	return previewBlock(&hovered)
 }
 
 // gradientBar renders a per-character gradient bar (green→yellow→red by position).
@@ -157,15 +168,22 @@ func (m contextStyleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tick()
 
+	case tea.WindowSizeMsg:
+		m.state.InvalidateLayout()
+		m.cachedPreview = m.renderPreview()
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyUp:
 			if m.cursor > 0 {
 				m.cursor--
+				m.cachedPreview = m.renderPreview()
 			}
 		case tea.KeyDown:
 			if m.cursor < len(m.choices)-1 {
 				m.cursor++
+				m.cachedPreview = m.renderPreview()
 			}
 		case tea.KeyEnter:
 			m.result = m.choices[m.cursor].value
@@ -190,13 +208,9 @@ func (m contextStyleModel) View() string {
 		return ""
 	}
 
-	// Build a preview state using the hovered context style.
-	hovered := *m.state
-	hovered.ContextStyle = m.choices[m.cursor].value
-
 	var b strings.Builder
 
-	b.WriteString(previewBlock(&hovered))
+	b.WriteString(m.cachedPreview)
 	b.WriteString("\n  " + csTitle.Render("📊 Context window — how verbose?") + "\n\n")
 
 	for i, c := range m.choices {

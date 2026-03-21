@@ -178,11 +178,21 @@ func previewBlock(state *WizardState) string {
 }
 
 // previewFormModel wraps a huh.Form in a Bubble Tea model that renders a live
-// status-line preview above the form. The preview reflects state on every frame.
+// status-line preview above the form. The preview is re-rendered only when user
+// input may have changed the state (key presses), not on internal ticks.
 type previewFormModel struct {
-	form   *huh.Form
-	state  *WizardState
-	goBack bool
+	form          *huh.Form
+	state         *WizardState
+	goBack        bool
+	cachedPreview string
+}
+
+func newPreviewFormModel(form *huh.Form, state *WizardState) previewFormModel {
+	return previewFormModel{
+		form:          form,
+		state:         state,
+		cachedPreview: previewBlock(state),
+	}
 }
 
 func (m previewFormModel) Init() tea.Cmd { return m.form.Init() }
@@ -196,9 +206,19 @@ func (m previewFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	// After the form has processed, treat a bare Escape as "go back".
-	if msg, ok := msg.(tea.KeyMsg); ok && msg.Type == tea.KeyEsc {
-		m.goBack = true
-		return m, tea.Quit
+	switch msg.(type) {
+	case tea.KeyMsg:
+		if msg.(tea.KeyMsg).Type == tea.KeyEsc {
+			m.goBack = true
+			return m, tea.Quit
+		}
+		// User input may have changed state — refresh preview.
+		m.state.InvalidateLayout()
+		m.cachedPreview = previewBlock(m.state)
+	case tea.WindowSizeMsg:
+		// Terminal resized — recompute layout for new width.
+		m.state.InvalidateLayout()
+		m.cachedPreview = previewBlock(m.state)
 	}
 	return m, cmd
 }
@@ -207,7 +227,7 @@ func (m previewFormModel) View() string {
 	if m.goBack || m.form.State != huh.StateNormal {
 		return ""
 	}
-	return previewBlock(m.state) + m.form.View()
+	return m.cachedPreview + m.form.View()
 }
 
 // runWithPreview runs a huh form wrapped in a Bubble Tea program that shows a
@@ -219,7 +239,7 @@ func runWithPreview(form *huh.Form, state *WizardState) error {
 		key.WithHelp("x/space", "toggle"),
 	)
 	form = form.WithTheme(huh.ThemeCharm()).WithKeyMap(km)
-	p := tea.NewProgram(previewFormModel{form: form, state: state})
+	p := tea.NewProgram(newPreviewFormModel(form, state))
 	final, err := p.Run()
 	if err != nil {
 		return err

@@ -63,6 +63,13 @@ func renderBar(pct float64, style config.BarStyle, width int) string {
 	}
 }
 
+var (
+	gradGreen  = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	gradYellow = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+	gradRed    = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+	gradDim    = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+)
+
 // renderGradientBar colors each filled character by its position's zone:
 // green zone → yellow zone → red zone, so danger areas are always visible.
 func renderGradientBar(filled, empty, width int) string {
@@ -70,23 +77,18 @@ func renderGradientBar(filled, empty, width int) string {
 	greenEnd := int(0.70 * float64(width))
 	yellowEnd := int(0.90 * float64(width))
 
-	green  := lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	yellow := lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
-	red    := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-	dim    := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-
 	var b strings.Builder
 	for i := range filled {
 		ch := "▓"
 		switch {
 		case i < greenEnd:
-			b.WriteString(green.Render(ch))
+			b.WriteString(gradGreen.Render(ch))
 		case i < yellowEnd:
-			b.WriteString(yellow.Render(ch))
+			b.WriteString(gradYellow.Render(ch))
 		default:
-			b.WriteString(red.Render(ch))
+			b.WriteString(gradRed.Render(ch))
 		}
 	}
-	b.WriteString(dim.Render(strings.Repeat("░", empty)))
+	b.WriteString(gradDim.Render(strings.Repeat("░", empty)))
 	return b.String()
 }

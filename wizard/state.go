@@ -10,6 +10,7 @@ import (
 	"github.com/saarshe/claude-code-statusline/components"
 	"github.com/saarshe/claude-code-statusline/config"
 	"github.com/saarshe/claude-code-statusline/render"
+	"github.com/saarshe/claude-code-statusline/schema"
 	"golang.org/x/term"
 )
 
@@ -53,6 +54,11 @@ type WizardState struct {
 
 	// BarWidth is the character width of progress bars (default 10).
 	BarWidth int
+
+	// cachedLayout stores the result of InferLayout so repeated preview
+	// renders don't re-run the layout measurement loop.
+	cachedLayout [][]string
+	layoutCached bool
 }
 
 // identityFeatures are shown in the first row (who/where am I).
@@ -171,10 +177,20 @@ func (s *WizardState) contextBarStyle() config.BarStyle {
 // when we need to wrap to two lines.
 var featureOrder = append(append([]string{}, identityFeatures...), statsFeatures...)
 
+// InvalidateLayout clears the cached layout so the next InferLayout call
+// recomputes it. Call this when features, styles, or context change.
+func (s *WizardState) InvalidateLayout() {
+	s.layoutCached = false
+	s.cachedLayout = nil
+}
+
 // InferLayout places all selected components on a single line, then
 // progressively splits the widest line in half until every line fits within
 // the terminal width (or each line has a single component).
 func (s *WizardState) InferLayout() [][]string {
+	if s.layoutCached {
+		return s.cachedLayout
+	}
 	featureSet := make(map[string]bool, len(s.Features))
 	for _, f := range s.Features {
 		featureSet[f] = true
@@ -188,48 +204,61 @@ func (s *WizardState) InferLayout() [][]string {
 		}
 	}
 	if len(all) == 0 {
+		s.cachedLayout = nil
+		s.layoutCached = true
 		return nil
 	}
 
 	layout := [][]string{all}
+	tw := termWidth()
+	mockInput := MockInput()
 
 	// Progressively split the widest overflowing line until everything fits.
-	for layoutExceedsWidth(layout, s) {
-		idx := widestLine(layout, s)
-		if len(layout[idx]) <= 1 {
+	for {
+		exceeds, widest := measureLayout(layout, s, mockInput, tw)
+		if !exceeds {
+			break
+		}
+		if len(layout[widest]) <= 1 {
 			break // can't split a single-component line
 		}
-		mid := len(layout[idx]) / 2
-		left := layout[idx][:mid]
-		right := layout[idx][mid:]
+		mid := len(layout[widest]) / 2
+		left := layout[widest][:mid]
+		right := layout[widest][mid:]
 		// Replace the line with two halves.
 		newLayout := make([][]string, 0, len(layout)+1)
-		newLayout = append(newLayout, layout[:idx]...)
+		newLayout = append(newLayout, layout[:widest]...)
 		newLayout = append(newLayout, left, right)
-		newLayout = append(newLayout, layout[idx+1:]...)
+		newLayout = append(newLayout, layout[widest+1:]...)
 		layout = newLayout
 	}
 
+	s.cachedLayout = layout
+	s.layoutCached = true
 	return layout
 }
 
-// widestLine returns the index of the line with the greatest rendered width.
-func widestLine(layout [][]string, s *WizardState) int {
+// measureLayout renders the layout once and returns whether any line exceeds
+// the terminal width and the index of the widest line.
+func measureLayout(layout [][]string, s *WizardState, input *schema.Input, tw int) (exceeds bool, widest int) {
 	cfg := s.toConfigWithLayout(layout)
-	output := render.Render(MockInput(), cfg)
+	output := render.Render(input, cfg)
 	lines := strings.Split(output, "\n")
 
-	best, bestW := 0, 0
+	bestW := 0
 	for i, line := range lines {
 		if i >= len(layout) {
 			break
 		}
 		w := lipgloss.Width(line)
+		if w > tw {
+			exceeds = true
+		}
 		if w > bestW {
-			best, bestW = i, w
+			widest, bestW = i, w
 		}
 	}
-	return best
+	return exceeds, widest
 }
 
 // termWidth returns the terminal width, defaulting to 80 if unavailable.
@@ -239,20 +268,6 @@ func termWidth() int {
 		return 80
 	}
 	return w
-}
-
-// layoutExceedsWidth checks if any line in the layout would be wider than the
-// terminal when rendered with mock data and the current wizard state.
-func layoutExceedsWidth(layout [][]string, s *WizardState) bool {
-	cfg := s.toConfigWithLayout(layout)
-	output := render.Render(MockInput(), cfg)
-	tw := termWidth()
-	for _, line := range strings.Split(output, "\n") {
-		if lipgloss.Width(line) > tw {
-			return true
-		}
-	}
-	return false
 }
 
 // ToConfig converts the wizard state to a *config.Config.
