@@ -27,7 +27,7 @@ type contextStyleModel struct {
 	done    bool
 	goBack  bool
 	result  string
-	state   *WizardState
+	preview previewCache
 }
 
 var (
@@ -109,7 +109,14 @@ func newContextStyleModel(state *WizardState) contextStyleModel {
 		}
 	}
 
-	return contextStyleModel{choices: choices, cursor: cursor, pct: 44.0, state: state}
+	m := contextStyleModel{choices: choices, cursor: cursor, pct: 44.0, preview: newPreviewCache(state)}
+	m.refreshPreview()
+	return m
+}
+
+func (m *contextStyleModel) refreshPreview() {
+	value := m.choices[m.cursor].value
+	m.preview.Refresh(func(s *WizardState) { s.ContextStyle = value })
 }
 
 // gradientBar renders a per-character gradient bar (green→yellow→red by position).
@@ -157,15 +164,21 @@ func (m contextStyleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tick()
 
+	case tea.WindowSizeMsg:
+		m.preview.HandleResize(msg)
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyUp:
 			if m.cursor > 0 {
 				m.cursor--
+				m.refreshPreview()
 			}
 		case tea.KeyDown:
 			if m.cursor < len(m.choices)-1 {
 				m.cursor++
+				m.refreshPreview()
 			}
 		case tea.KeyEnter:
 			m.result = m.choices[m.cursor].value
@@ -190,13 +203,9 @@ func (m contextStyleModel) View() string {
 		return ""
 	}
 
-	// Build a preview state using the hovered context style.
-	hovered := *m.state
-	hovered.ContextStyle = m.choices[m.cursor].value
-
 	var b strings.Builder
 
-	b.WriteString(previewBlock(&hovered))
+	b.WriteString(m.preview.String())
 	b.WriteString("\n  " + csTitle.Render("📊 Context window — how verbose?") + "\n\n")
 
 	for i, c := range m.choices {

@@ -1,28 +1,21 @@
 package wizard
 
 import (
-	"os"
-
 	"github.com/saarshe/claude-code-statusline/render"
 	"github.com/saarshe/claude-code-statusline/schema"
 )
 
 // MockInput returns a realistic sample input for wizard preview rendering.
-// It uses the actual working directory so that git components (branch, status)
-// produce real output.
+// All data is static — no subprocess calls or I/O are performed.
 func MockInput() *schema.Input {
-	cwd, _ := os.Getwd()
-	if cwd == "" {
-		cwd = "."
-	}
 	pct := 44.0
 	return &schema.Input{
 		Model: schema.Model{
 			DisplayName: "claude-sonnet-4-6",
 		},
-		Cwd: cwd,
+		Cwd: "/home/user/project",
 		Workspace: schema.Workspace{
-			CurrentDir: cwd,
+			CurrentDir: "/home/user/project",
 		},
 		ContextWindow: schema.Context{
 			UsedPercentage:    &pct,
@@ -42,6 +35,11 @@ func MockInput() *schema.Input {
 			TotalDurationMS:   83000,
 			TotalLinesAdded:   24,
 			TotalLinesRemoved: 8,
+		},
+		Git: schema.Git{
+			Branch:   "main",
+			Staged:   2,
+			Modified: 3,
 		},
 	}
 }

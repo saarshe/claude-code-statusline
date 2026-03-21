@@ -178,11 +178,19 @@ func previewBlock(state *WizardState) string {
 }
 
 // previewFormModel wraps a huh.Form in a Bubble Tea model that renders a live
-// status-line preview above the form. The preview reflects state on every frame.
+// status-line preview above the form. The preview is re-rendered only when user
+// input may have changed the state (key presses), not on internal ticks.
 type previewFormModel struct {
-	form   *huh.Form
-	state  *WizardState
-	goBack bool
+	form    *huh.Form
+	goBack  bool
+	preview previewCache
+}
+
+func newPreviewFormModel(form *huh.Form, state *WizardState) previewFormModel {
+	return previewFormModel{
+		form:    form,
+		preview: newPreviewCache(state),
+	}
 }
 
 func (m previewFormModel) Init() tea.Cmd { return m.form.Init() }
@@ -195,10 +203,16 @@ func (m previewFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.form.State != huh.StateNormal {
 		return m, tea.Quit
 	}
-	// After the form has processed, treat a bare Escape as "go back".
-	if msg, ok := msg.(tea.KeyMsg); ok && msg.Type == tea.KeyEsc {
-		m.goBack = true
-		return m, tea.Quit
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyEsc {
+			m.goBack = true
+			return m, tea.Quit
+		}
+		// User input may have changed state — refresh preview.
+		m.preview.Refresh(nil)
+	case tea.WindowSizeMsg:
+		m.preview.HandleResize(msg)
 	}
 	return m, cmd
 }
@@ -207,7 +221,7 @@ func (m previewFormModel) View() string {
 	if m.goBack || m.form.State != huh.StateNormal {
 		return ""
 	}
-	return previewBlock(m.state) + m.form.View()
+	return m.preview.String() + m.form.View()
 }
 
 // runWithPreview runs a huh form wrapped in a Bubble Tea program that shows a
@@ -219,7 +233,7 @@ func runWithPreview(form *huh.Form, state *WizardState) error {
 		key.WithHelp("x/space", "toggle"),
 	)
 	form = form.WithTheme(huh.ThemeCharm()).WithKeyMap(km)
-	p := tea.NewProgram(previewFormModel{form: form, state: state})
+	p := tea.NewProgram(newPreviewFormModel(form, state))
 	final, err := p.Run()
 	if err != nil {
 		return err

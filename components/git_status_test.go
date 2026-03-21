@@ -9,30 +9,55 @@ import (
 	"github.com/saarshe/claude-code-statusline/theme"
 )
 
-func TestGitStatus_InGitRepo(t *testing.T) {
+func TestGitStatus_WithBranch(t *testing.T) {
 	c := Get("git_status")
 	th := theme.Get("default")
-	input := &schema.Input{Workspace: schema.Workspace{CurrentDir: "."}}
+	input := &schema.Input{
+		Git: schema.Git{Branch: "main", Staged: 2, Modified: 3},
+	}
 
 	result := c.Render(input, config.Default(), th)
 
 	if result == "" {
-		t.Error("expected non-empty output in git repo")
+		t.Error("expected non-empty output")
 	}
-	if strings.Contains(result, "fatal") || strings.Contains(result, "error") {
-		t.Errorf("should not show git error, got %q", result)
+	if !strings.Contains(result, "main") {
+		t.Errorf("expected branch name, got %q", result)
+	}
+	if !strings.Contains(result, "+2") {
+		t.Errorf("expected staged count, got %q", result)
+	}
+	if !strings.Contains(result, "~3") {
+		t.Errorf("expected modified count, got %q", result)
 	}
 }
 
-func TestGitStatus_NotInGitRepo(t *testing.T) {
+func TestGitStatus_NoBranch(t *testing.T) {
 	c := Get("git_status")
 	th := theme.Get("default")
-	input := &schema.Input{Workspace: schema.Workspace{CurrentDir: "/tmp"}}
+	input := &schema.Input{}
 
 	result := c.Render(input, config.Default(), th)
 
-	if strings.Contains(result, "fatal") || strings.Contains(result, "error") {
-		t.Errorf("should not show git error output, got %q", result)
+	if result != "" {
+		t.Errorf("expected empty output when no branch, got %q", result)
+	}
+}
+
+func TestGitStatus_CleanRepo(t *testing.T) {
+	c := Get("git_status")
+	th := theme.Get("default")
+	input := &schema.Input{
+		Git: schema.Git{Branch: "main"},
+	}
+
+	result := c.Render(input, config.Default(), th)
+
+	if !strings.Contains(result, "main") {
+		t.Errorf("expected branch name, got %q", result)
+	}
+	if strings.Contains(result, "+") || strings.Contains(result, "~") {
+		t.Errorf("expected no counts for clean repo, got %q", result)
 	}
 }
 
@@ -41,7 +66,9 @@ func TestGitStatus_NoEmoji(t *testing.T) {
 	th := theme.Get("default")
 	cfg := config.Default()
 	cfg.Emojis = config.EmojiNone
-	input := &schema.Input{Workspace: schema.Workspace{CurrentDir: "."}}
+	input := &schema.Input{
+		Git: schema.Git{Branch: "main"},
+	}
 
 	result := c.Render(input, cfg, th)
 

@@ -30,6 +30,8 @@ func run(args []string, stdin io.Reader) (string, int) {
 		return "", 0
 	}
 
+	input.PopulateGit()
+
 	cfg, err := config.LoadFile(config.ConfigPath())
 	if err != nil {
 		cfg = config.Default()
