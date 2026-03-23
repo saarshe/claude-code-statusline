@@ -165,7 +165,7 @@ func (s *WizardState) contextBarStyle() config.BarStyle {
 		return config.BarSolid
 	case "ascii":
 		return config.BarASCII
-	case "gradient":
+	case "tokens_bar", "tokens_bar_pct", "gradient":
 		return config.BarGradient
 	default:
 		return config.BarBlock

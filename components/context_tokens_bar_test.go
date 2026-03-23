@@ -25,7 +25,7 @@ func TestContextTokensBar_ShowsTokensAndBar(t *testing.T) {
 		t.Errorf("expected max tokens in output, got %q", result)
 	}
 	// bar characters should be present
-	if !strings.Contains(result, "▓") && !strings.Contains(result, "░") {
+	if !strings.Contains(result, "█") && !strings.Contains(result, "░") {
 		t.Errorf("expected bar characters in output, got %q", result)
 	}
 }
@@ -62,7 +62,7 @@ func TestContextTokensBar_FallbackPctFromCurrentUsage(t *testing.T) {
 	if !strings.Contains(result, "40k") {
 		t.Errorf("expected context fill tokens in output, got %q", result)
 	}
-	if !strings.Contains(result, "▓") || !strings.Contains(result, "░") {
+	if !strings.Contains(result, "█") || !strings.Contains(result, "░") {
 		t.Errorf("expected bar characters in output, got %q", result)
 	}
 }

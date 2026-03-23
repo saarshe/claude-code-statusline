@@ -23,7 +23,7 @@ func (c *contextBarComponent) Render(data *schema.Input, cfg *config.Config, th 
 	}
 
 	prefix := GetMeta(c.Key()).Prefix(cfg)
-	bar := renderBar(*pct, cfg.ContextBar.Style, cfg.ContextBar.Width)
+	bar := renderBar(*pct, cfg.ContextBar.Style, cfg.ContextBar.Width, th)
 
 	// Gradient bar has per-character colors; wrapping with an outer Render would
 	// override them. Render the percentage separately and concatenate.
@@ -39,7 +39,7 @@ func (c *contextBarComponent) Render(data *schema.Input, cfg *config.Config, th 
 	return ContextStyle(th, *pct, cfg.ContextBar.Thresholds).Render(text)
 }
 
-func renderBar(pct float64, style config.BarStyle, width int) string {
+func renderBar(pct float64, style config.BarStyle, width int, th *theme.Theme) string {
 	if width <= 0 {
 		width = 10
 	}
@@ -57,38 +57,32 @@ func renderBar(pct float64, style config.BarStyle, width int) string {
 	case config.BarPercent:
 		return ""
 	case config.BarGradient:
-		return renderGradientBar(filled, empty, width)
+		return renderGradientBar(filled, empty, width, th)
 	default: // BarBlock
-		return strings.Repeat("▓", filled) + strings.Repeat("░", empty)
+		return strings.Repeat("█", filled) + strings.Repeat("░", empty)
 	}
 }
 
-var (
-	gradGreen  = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	gradYellow = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
-	gradRed    = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-	gradDim    = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-)
+var gradDim = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 
-// renderGradientBar colors each filled character by its position's zone:
-// green zone → yellow zone → red zone, so danger areas are always visible.
-func renderGradientBar(filled, empty, width int) string {
-	// zone boundaries as character positions
-	greenEnd := int(0.70 * float64(width))
-	yellowEnd := int(0.90 * float64(width))
+// renderGradientBar batches consecutive characters in the same color zone
+// so themes with background colors render a continuous bar, not per-char boxes.
+func renderGradientBar(filled, empty, width int, th *theme.Theme) string {
+	greenEnd := Clamp(int(0.70*float64(width)), 0, filled)
+	yellowEnd := Clamp(int(0.90*float64(width)), 0, filled)
 
 	var b strings.Builder
-	for i := range filled {
-		ch := "▓"
-		switch {
-		case i < greenEnd:
-			b.WriteString(gradGreen.Render(ch))
-		case i < yellowEnd:
-			b.WriteString(gradYellow.Render(ch))
-		default:
-			b.WriteString(gradRed.Render(ch))
-		}
+	if greenEnd > 0 {
+		b.WriteString(th.Success.Render(strings.Repeat("█", greenEnd)))
 	}
-	b.WriteString(gradDim.Render(strings.Repeat("░", empty)))
+	if yellowEnd > greenEnd {
+		b.WriteString(th.Warning.Render(strings.Repeat("█", yellowEnd-greenEnd)))
+	}
+	if filled > yellowEnd {
+		b.WriteString(th.Danger.Render(strings.Repeat("█", filled-yellowEnd)))
+	}
+	if empty > 0 {
+		b.WriteString(gradDim.Render(strings.Repeat("░", empty)))
+	}
 	return b.String()
 }
