@@ -27,7 +27,7 @@ func TestContextTokensBarPct_ShowsAll(t *testing.T) {
 	if !strings.Contains(result, "44%") {
 		t.Errorf("expected percentage, got %q", result)
 	}
-	if !strings.Contains(result, "▓") && !strings.Contains(result, "░") {
+	if !strings.Contains(result, "█") && !strings.Contains(result, "░") {
 		t.Errorf("expected bar characters, got %q", result)
 	}
 }

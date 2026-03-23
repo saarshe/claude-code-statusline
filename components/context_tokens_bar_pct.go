@@ -29,7 +29,7 @@ func (c *contextTokensBarPctComponent) Render(data *schema.Input, cfg *config.Co
 		pct = float64(cw.ContextFillTokens()) / float64(cw.ContextWindowSize) * 100
 	}
 
-	bar := renderBar(pct, cfg.ContextBar.Style, cfg.ContextBar.Width)
+	bar := renderBar(pct, cfg.ContextBar.Style, cfg.ContextBar.Width, th)
 	used := HumanizeTokens(cw.ContextFillTokens())
 	max := HumanizeTokens(cw.ContextWindowSize)
 	style := ContextStyle(th, pct, cfg.ContextBar.Thresholds)

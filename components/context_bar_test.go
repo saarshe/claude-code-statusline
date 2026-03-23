@@ -40,8 +40,8 @@ func TestContextBar_BlockStyle(t *testing.T) {
 	if !strings.Contains(result, "28%") {
 		t.Errorf("expected '28%%' in output, got %q", result)
 	}
-	if !strings.Contains(result, "▓") {
-		t.Errorf("expected block char '▓' in output, got %q", result)
+	if !strings.Contains(result, "█") {
+		t.Errorf("expected block char '█' in output, got %q", result)
 	}
 	if !strings.Contains(result, "░") {
 		t.Errorf("expected empty char '░' in output, got %q", result)
@@ -89,7 +89,7 @@ func TestContextBar_PercentStyle(t *testing.T) {
 		t.Errorf("expected '28%%' in output, got %q", result)
 	}
 	stripped := stripANSI(result)
-	if strings.Contains(stripped, "▓") || strings.Contains(stripped, "█") || strings.Contains(stripped, "[") {
+	if strings.Contains(stripped, "█") || strings.Contains(stripped, "[") {
 		t.Errorf("percent style should not contain bar chars, got %q", stripped)
 	}
 }
