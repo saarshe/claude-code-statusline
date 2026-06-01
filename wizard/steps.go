@@ -20,5 +20,6 @@ var Steps = []Step{
 	{ShouldRun: (*WizardState).HasCache, Run: runCacheStep},
 	{ShouldRun: (*WizardState).HasGit, Run: runGitStep},
 	{ShouldRun: (*WizardState).HasLines, Run: runLinesStep},
+	{ShouldRun: (*WizardState).HasRateLimits, Run: runRateLimitsStep},
 	{Run: runEmojisStep},
 }

@@ -1,6 +1,8 @@
 package wizard
 
 import (
+	"time"
+
 	"github.com/saarshe/claude-code-statusline/render"
 	"github.com/saarshe/claude-code-statusline/schema"
 )
@@ -9,6 +11,9 @@ import (
 // All data is static — no subprocess calls or I/O are performed.
 func MockInput() *schema.Input {
 	pct := 44.0
+	// Reset times are computed from now so the rate_limits_reset preview
+	// shows a sensible countdown ("in 2h14m", "in 3d") whenever the wizard runs.
+	now := time.Now().Unix()
 	return &schema.Input{
 		Model: schema.Model{
 			DisplayName: "claude-sonnet-4-6",
@@ -30,6 +35,16 @@ func MockInput() *schema.Input {
 		},
 		Agent:    &schema.Agent{Name: "subagent"},
 		Worktree: &schema.Worktree{Name: "feature-branch"},
+		Effort:   &schema.Effort{Level: "high"},
+		RateLimits: &schema.RateLimits{
+			FiveHour: &schema.RateLimitWindow{UsedPercentage: 23, ResetsAt: now + 2*3600 + 14*60},
+			SevenDay: &schema.RateLimitWindow{UsedPercentage: 41, ResetsAt: now + 3*86400},
+		},
+		PR: &schema.PR{
+			Number:      1234,
+			URL:         "https://github.com/saarshe/claude-code-statusline/pull/1234",
+			ReviewState: "pending",
+		},
 		Cost: schema.Cost{
 			TotalCostUSD:      2.57,
 			TotalDurationMS:   83000,

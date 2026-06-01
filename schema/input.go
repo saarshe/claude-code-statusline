@@ -8,20 +8,23 @@ import (
 )
 
 type Input struct {
-	Cwd            string    `json:"cwd"`
-	SessionID      string    `json:"session_id"`
-	TranscriptPath string    `json:"transcript_path"`
-	Version        string    `json:"version"`
-	Model          Model     `json:"model"`
-	Workspace      Workspace `json:"workspace"`
-	Cost           Cost      `json:"cost"`
-	ContextWindow  Context   `json:"context_window"`
-	Exceeds200k    bool      `json:"exceeds_200k_tokens"`
-	OutputStyle    *Style    `json:"output_style,omitempty"`
-	Vim            *Vim      `json:"vim,omitempty"`
-	Agent          *Agent    `json:"agent,omitempty"`
-	Worktree       *Worktree `json:"worktree,omitempty"`
-	Git            Git       `json:"-"` // populated at runtime, not from JSON
+	Cwd            string      `json:"cwd"`
+	SessionID      string      `json:"session_id"`
+	TranscriptPath string      `json:"transcript_path"`
+	Version        string      `json:"version"`
+	Model          Model       `json:"model"`
+	Workspace      Workspace   `json:"workspace"`
+	Cost           Cost        `json:"cost"`
+	ContextWindow  Context     `json:"context_window"`
+	Exceeds200k    bool        `json:"exceeds_200k_tokens"`
+	OutputStyle    *Style      `json:"output_style,omitempty"`
+	Vim            *Vim        `json:"vim,omitempty"`
+	Agent          *Agent      `json:"agent,omitempty"`
+	Worktree       *Worktree   `json:"worktree,omitempty"`
+	Effort         *Effort     `json:"effort,omitempty"`
+	RateLimits     *RateLimits `json:"rate_limits,omitempty"`
+	PR             *PR         `json:"pr,omitempty"`
+	Git            Git         `json:"-"` // populated at runtime, not from JSON
 }
 
 type Model struct {
@@ -102,6 +105,32 @@ type Worktree struct {
 	Branch         string `json:"branch,omitempty"`
 	OriginalCwd    string `json:"original_cwd"`
 	OriginalBranch string `json:"original_branch,omitempty"`
+}
+
+// Effort is the live reasoning effort level. Absent when the current
+// model does not support the effort parameter.
+type Effort struct {
+	Level string `json:"level"` // low, medium, high, xhigh, max
+}
+
+// RateLimits reports usage of the Claude.ai subscription windows.
+// Present only for Pro/Max subscribers after the first API response.
+// Each window may be independently absent.
+type RateLimits struct {
+	FiveHour *RateLimitWindow `json:"five_hour,omitempty"`
+	SevenDay *RateLimitWindow `json:"seven_day,omitempty"`
+}
+
+type RateLimitWindow struct {
+	UsedPercentage float64 `json:"used_percentage"`
+	ResetsAt       int64   `json:"resets_at"` // Unix epoch seconds
+}
+
+// PR is the open pull request for the current branch, when one exists.
+type PR struct {
+	Number      int    `json:"number"`
+	URL         string `json:"url"`
+	ReviewState string `json:"review_state,omitempty"` // approved, pending, changes_requested, draft
 }
 
 // Git holds pre-fetched git information so components don't need to exec.

@@ -76,3 +76,22 @@ func runLinesStep(state *WizardState) error {
 		),
 	), state)
 }
+
+func runRateLimitsStep(state *WizardState) error {
+	rateLimitsExamples := map[string]string{
+		"pct":   "📈 5h 23% · 7d 41%",
+		"reset": "📈 5h 23% in 2h14m · 7d 41% in 3d",
+	}
+	return runWithPreview(huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("📈 Rate limits — show reset countdown?").
+				Description(
+					"Claude.ai Pro/Max accounts have a 5-hour rolling and a 7-day window.\n" +
+						"Showing reset times helps you pace work near a window's end.\n",
+				).
+				Options(styleOptions("rate_limits", rateLimitsExamples)...).
+				Value(&state.RateLimitsStyle),
+		),
+	), state)
+}
