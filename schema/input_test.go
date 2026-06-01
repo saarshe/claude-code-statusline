@@ -246,6 +246,29 @@ func TestParse_MinimalJSON(t *testing.T) {
 	}
 }
 
+func TestParse_RateLimitsPartialWindow(t *testing.T) {
+	// Each window is independently optional per the statusline docs:
+	// "Each window (five_hour, seven_day) may be independently absent."
+	json := `{
+		"rate_limits": {
+			"five_hour": {"used_percentage": 12.0, "resets_at": 1738425600}
+		}
+	}`
+	input, err := Parse(strings.NewReader(json))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if input.RateLimits == nil || input.RateLimits.FiveHour == nil {
+		t.Fatal("FiveHour should be present")
+	}
+	if input.RateLimits.FiveHour.UsedPercentage != 12.0 {
+		t.Errorf("FiveHour.UsedPercentage = %v, want 12.0", input.RateLimits.FiveHour.UsedPercentage)
+	}
+	if input.RateLimits.SevenDay != nil {
+		t.Errorf("SevenDay should be nil when omitted, got %v", input.RateLimits.SevenDay)
+	}
+}
+
 func TestParse_MalformedJSON(t *testing.T) {
 	_, err := Parse(strings.NewReader(`{not json`))
 	if err == nil {

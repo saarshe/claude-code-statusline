@@ -61,6 +61,56 @@ func TestRateLimits_EmptyWhenBothWindowsAbsent(t *testing.T) {
 	}
 }
 
+func TestRateLimits_OnlySevenDay(t *testing.T) {
+	data := &schema.Input{RateLimits: &schema.RateLimits{
+		SevenDay: &schema.RateLimitWindow{UsedPercentage: 60},
+	}}
+	result := Get("rate_limits").Render(data, config.Default(), theme.Get("default"))
+	if !strings.Contains(result, "7d 60%") {
+		t.Errorf("expected '7d 60%%', got %q", result)
+	}
+	if strings.Contains(result, "5h") {
+		t.Errorf("did not expect 5h window, got %q", result)
+	}
+}
+
+func TestRateLimits_ThresholdColors(t *testing.T) {
+	// Default thresholds are [70, 90]: green < 70 ≤ yellow < 90 ≤ red.
+	cases := []struct {
+		pct    float64
+		ansi   string
+		label  string
+	}{
+		{30, "\033[32m", "green"},
+		{75, "\033[33m", "yellow"},
+		{95, "\033[31m", "red"},
+	}
+	for _, tc := range cases {
+		data := &schema.Input{RateLimits: &schema.RateLimits{
+			FiveHour: &schema.RateLimitWindow{UsedPercentage: tc.pct},
+		}}
+		result := Get("rate_limits").Render(data, config.Default(), theme.Get("default"))
+		if !strings.Contains(result, tc.ansi) {
+			t.Errorf("pct=%v: expected %s color (%q) in output, got %q", tc.pct, tc.label, tc.ansi, result)
+		}
+	}
+}
+
+func TestRateLimitsReset_OmitsCountdownWhenResetsAtZero(t *testing.T) {
+	// ResetsAt is documented as Unix epoch seconds; treat 0 as "not provided"
+	// and render the percentage without "in …".
+	data := &schema.Input{RateLimits: &schema.RateLimits{
+		FiveHour: &schema.RateLimitWindow{UsedPercentage: 23, ResetsAt: 0},
+	}}
+	result := Get("rate_limits_reset").Render(data, config.Default(), theme.Get("default"))
+	if !strings.Contains(result, "5h 23%") {
+		t.Errorf("expected percentage to still render, got %q", result)
+	}
+	if strings.Contains(result, " in ") {
+		t.Errorf("did not expect countdown when ResetsAt=0, got %q", result)
+	}
+}
+
 func TestRateLimitsReset_IncludesCountdown(t *testing.T) {
 	now := time.Unix(1_700_000_000, 0)
 	withFixedNow(t, now)
@@ -97,6 +147,8 @@ func TestFormatResetCountdown(t *testing.T) {
 		{2 * time.Hour, "2h"},
 		{25 * time.Hour, "1d1h"},
 		{3 * 24 * time.Hour, "3d"},
+		// Rounding boundary: truncates (does not round up). 1h59m59s stays "1h59m".
+		{time.Hour + 59*time.Minute + 59*time.Second, "1h59m"},
 	}
 	for _, tt := range tests {
 		got := formatResetCountdown(tt.d)

@@ -52,6 +52,23 @@ func TestPR_ReviewStateGlyphs(t *testing.T) {
 	}
 }
 
+func TestPR_NoGlyphForUnknownReviewState(t *testing.T) {
+	// An empty or unrecognized review_state should render the number with no
+	// trailing glyph (and no trailing space).
+	for _, state := range []string{"", "unknown_state"} {
+		data := &schema.Input{PR: &schema.PR{Number: 5, ReviewState: state}}
+		result := Get("pr").Render(data, config.Default(), theme.Get("default"))
+		if !strings.Contains(result, "#5") {
+			t.Errorf("state %q: expected '#5', got %q", state, result)
+		}
+		for _, glyph := range []string{"✓", "✗", "⏳", "·"} {
+			if strings.Contains(result, glyph) {
+				t.Errorf("state %q: unexpected glyph %q in output %q", state, glyph, result)
+			}
+		}
+	}
+}
+
 func TestPR_WrapsHyperlinkWhenURLPresent(t *testing.T) {
 	data := &schema.Input{PR: &schema.PR{Number: 7, URL: "https://example.com/7"}}
 	result := Get("pr").Render(data, config.Default(), theme.Get("default"))

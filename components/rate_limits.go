@@ -11,6 +11,8 @@ import (
 )
 
 // rateLimitsNow is overridable from tests for deterministic countdown output.
+// Not safe for t.Parallel — tests that swap it must restore via t.Cleanup and
+// must not run in parallel with other tests that read it.
 var rateLimitsNow = time.Now
 
 type rateLimitsComponent struct {
@@ -56,6 +58,7 @@ func formatRateWindow(label string, w *schema.RateLimitWindow, withTime bool, no
 }
 
 // formatResetCountdown renders a time.Duration as a compact countdown.
+// Truncates toward zero — 1h59m59s renders as "1h59m", not "2h".
 // Examples: "2h14m", "45m", "3d", "23h", "now".
 func formatResetCountdown(d time.Duration) string {
 	if d <= 0 {

@@ -16,6 +16,8 @@ func init() { Register(&prComponent{}) }
 func (p *prComponent) Key() ComponentKey { return "pr" }
 
 func (p *prComponent) Render(data *schema.Input, cfg *config.Config, th *theme.Theme) string {
+	// Number==0 doubles as a missing-field check: PRs are 1-indexed, so a zero
+	// here means JSON omitted it. Don't loosen this without a real PR #0 case.
 	if data.PR == nil || data.PR.Number == 0 {
 		return ""
 	}

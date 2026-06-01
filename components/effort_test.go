@@ -27,6 +27,20 @@ func TestEffort_EmptyWhenNil(t *testing.T) {
 	}
 }
 
+func TestEffort_UnknownLevelFallsBackToPrimary(t *testing.T) {
+	// Unknown levels should still render (in case Claude Code adds new ones)
+	// using the Primary style rather than dropping the field.
+	data := &schema.Input{Effort: &schema.Effort{Level: "ultra"}}
+	result := Get("effort").Render(data, config.Default(), theme.Get("default"))
+	if !strings.Contains(result, "ultra") {
+		t.Errorf("expected unknown level to still render, got %q", result)
+	}
+	// Default theme's Primary is cyan (color 6 → \033[36m).
+	if !strings.Contains(result, "\033[36m") {
+		t.Errorf("expected Primary (cyan) style for unknown level, got %q", result)
+	}
+}
+
 func TestEffort_EmptyWhenLevelEmpty(t *testing.T) {
 	data := &schema.Input{Effort: &schema.Effort{Level: ""}}
 	result := Get("effort").Render(data, config.Default(), theme.Get("default"))
