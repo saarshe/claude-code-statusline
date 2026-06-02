@@ -3,6 +3,7 @@ package wizard
 import (
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/saarshe/claude-code-statusline/config"
@@ -20,12 +21,22 @@ func equalFeatures(a, b []string) bool {
 	return reflect.DeepEqual(ac, bc)
 }
 
+// reasonsContain reports whether reasons contains a substring match.
+func reasonsContain(reasons []string, want string) bool {
+	for _, r := range reasons {
+		if strings.Contains(r, want) {
+			return true
+		}
+	}
+	return false
+}
+
 func TestStateFromConfig_DefaultRoundTrip(t *testing.T) {
 	want := DefaultState()
-	got, lossy := StateFromConfig(want.ToConfig())
+	got, reasons := StateFromConfig(want.ToConfig())
 
-	if lossy {
-		t.Fatalf("default-state round trip should not be lossy")
+	if len(reasons) > 0 {
+		t.Fatalf("default-state round trip should be lossless, got reasons: %v", reasons)
 	}
 	if got.Theme != want.Theme {
 		t.Errorf("Theme: got %q want %q", got.Theme, want.Theme)
@@ -66,9 +77,10 @@ func TestStateFromConfig_ContextStyles(t *testing.T) {
 		barStyle  config.BarStyle
 		want      string
 	}{
-		{"block", "context_bar", config.BarBlock, "block"},
 		{"solid", "context_bar", config.BarSolid, "solid"},
+		{"block_to_solid", "context_bar", config.BarBlock, "solid"},
 		{"ascii", "context_bar", config.BarASCII, "ascii"},
+		{"gradient", "context_bar", config.BarGradient, "gradient"},
 		{"pct", "context_pct", "", "pct"},
 		{"tokens", "context_tokens", "", "tokens"},
 		{"tokens_bar", "context_tokens_bar", config.BarGradient, "tokens_bar"},
@@ -76,20 +88,13 @@ func TestStateFromConfig_ContextStyles(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := &config.Config{
-				Theme:  "default",
-				Emojis: config.EmojiAll,
-				ContextBar: config.ContextBarConfig{
-					Style:      tc.barStyle,
-					Width:      10,
-					Thresholds: []int{70, 90},
-				},
-				Separator: config.SeparatorConfig{Character: "|"},
-				Lines:     []config.LineConfig{{Components: []string{tc.component}}},
+			cfg := defaultConfigWithLines([]string{tc.component})
+			if tc.barStyle != "" {
+				cfg.ContextBar.Style = tc.barStyle
 			}
-			got, lossy := StateFromConfig(cfg)
-			if lossy {
-				t.Fatalf("unexpected lossy=true")
+			got, reasons := StateFromConfig(cfg)
+			if len(reasons) > 0 {
+				t.Fatalf("unexpected reasons: %v", reasons)
 			}
 			if !equalFeatures(got.Features, []string{"context"}) {
 				t.Errorf("Features: got %v want [context]", got.Features)
@@ -125,9 +130,9 @@ func TestStateFromConfig_FeatureStyleMapping(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := defaultConfigWithLines([]string{tc.component})
-			got, lossy := StateFromConfig(cfg)
-			if lossy {
-				t.Fatalf("unexpected lossy=true")
+			got, reasons := StateFromConfig(cfg)
+			if len(reasons) > 0 {
+				t.Fatalf("unexpected reasons: %v", reasons)
 			}
 			if !equalFeatures(got.Features, []string{tc.feature}) {
 				t.Errorf("Features: got %v want [%s]", got.Features, tc.feature)
@@ -144,7 +149,10 @@ func TestStateFromConfig_ThemeAndEmojisCopied(t *testing.T) {
 	cfg.Theme = "catppuccin"
 	cfg.Emojis = config.EmojiNone
 
-	got, _ := StateFromConfig(cfg)
+	got, reasons := StateFromConfig(cfg)
+	if len(reasons) > 0 {
+		t.Fatalf("unexpected reasons: %v", reasons)
+	}
 	if got.Theme != "catppuccin" {
 		t.Errorf("Theme: got %q want catppuccin", got.Theme)
 	}
@@ -156,7 +164,10 @@ func TestStateFromConfig_ThemeAndEmojisCopied(t *testing.T) {
 func TestStateFromConfig_BarWidthCopied(t *testing.T) {
 	cfg := defaultConfigWithLines([]string{"context_bar"})
 	cfg.ContextBar.Width = 25
-	got, _ := StateFromConfig(cfg)
+	got, reasons := StateFromConfig(cfg)
+	if len(reasons) > 0 {
+		t.Fatalf("unexpected reasons: %v", reasons)
+	}
 	if got.BarWidth != 25 {
 		t.Errorf("BarWidth: got %d want 25", got.BarWidth)
 	}
@@ -164,11 +175,10 @@ func TestStateFromConfig_BarWidthCopied(t *testing.T) {
 
 func TestStateFromConfig_LossyOnUnknownComponent(t *testing.T) {
 	cfg := defaultConfigWithLines([]string{"model", "totally_made_up_component"})
-	got, lossy := StateFromConfig(cfg)
-	if !lossy {
-		t.Errorf("expected lossy=true for unknown component")
+	got, reasons := StateFromConfig(cfg)
+	if !reasonsContain(reasons, "unknown") {
+		t.Errorf("expected reasons to mention unknown components, got %v", reasons)
 	}
-	// Unknown component should be skipped from features.
 	if !equalFeatures(got.Features, []string{"model"}) {
 		t.Errorf("Features should skip unknown: got %v want [model]", got.Features)
 	}
@@ -177,34 +187,29 @@ func TestStateFromConfig_LossyOnUnknownComponent(t *testing.T) {
 func TestStateFromConfig_LossyOnCustomSeparator(t *testing.T) {
 	cfg := defaultConfigWithLines([]string{"model", "cost"})
 	cfg.Separator.Character = "::"
-	_, lossy := StateFromConfig(cfg)
-	if !lossy {
-		t.Errorf("expected lossy=true for non-default separator")
+	_, reasons := StateFromConfig(cfg)
+	if !reasonsContain(reasons, "separator") {
+		t.Errorf("expected reasons to mention separator, got %v", reasons)
 	}
 }
 
 func TestStateFromConfig_LossyOnCustomLayout(t *testing.T) {
-	// model first then cost on a single hand-arranged line — wizard would
-	// canonically place cost on a separate stats row, but here it's mixed.
 	cfg := defaultConfigWithLines([]string{"cost", "model"})
-	_, lossy := StateFromConfig(cfg)
-	if !lossy {
-		t.Errorf("expected lossy=true for non-canonical line order")
+	_, reasons := StateFromConfig(cfg)
+	if !reasonsContain(reasons, "layout") {
+		t.Errorf("expected reasons to mention layout, got %v", reasons)
 	}
 }
 
 func TestStateFromConfig_NotLossyForCanonicalLayout(t *testing.T) {
-	// A natural single-row layout from a small feature set should NOT be lossy.
 	cfg := defaultConfigWithLines([]string{"model", "cost"})
-	_, lossy := StateFromConfig(cfg)
-	if lossy {
-		t.Errorf("expected lossy=false for canonical small layout")
+	_, reasons := StateFromConfig(cfg)
+	if len(reasons) > 0 {
+		t.Errorf("expected no reasons for canonical small layout, got %v", reasons)
 	}
 }
 
 func TestStateFromConfig_FeatureOrderIsCanonical(t *testing.T) {
-	// Hand-arranged line: stats before identity. Features should still come
-	// out in canonical order (identity before stats).
 	cfg := defaultConfigWithLines([]string{"cost", "model", "git_status"})
 	got, _ := StateFromConfig(cfg)
 
@@ -215,32 +220,26 @@ func TestStateFromConfig_FeatureOrderIsCanonical(t *testing.T) {
 }
 
 func TestStateFromConfig_LossyOnDuplicateFeatureComponents(t *testing.T) {
-	// Two components mapping to the same feature is a hand-edit the wizard
-	// can't represent — keep the first, mark lossy. (Layout comparison
-	// catches it because the canonical layout collapses to one component.)
 	cfg := defaultConfigWithLines([]string{"cache", "cache_hit"})
-	got, lossy := StateFromConfig(cfg)
+	got, reasons := StateFromConfig(cfg)
 
-	if !lossy {
-		t.Errorf("expected lossy=true for duplicate feature components")
+	if !reasonsContain(reasons, "layout") {
+		t.Errorf("expected reasons to mention layout (duplicate caught by component mismatch), got %v", reasons)
 	}
 	if !equalFeatures(got.Features, []string{"cache"}) {
-		t.Errorf("Features should dedupe to single 'cache': got %v", got.Features)
+		t.Errorf("Features should dedupe: got %v", got.Features)
 	}
-	// The first occurrence wins.
 	if got.CacheStyle != "counts" {
 		t.Errorf("CacheStyle: got %q want %q (first occurrence wins)", got.CacheStyle, "counts")
 	}
 }
 
 func TestStateFromConfig_ConfigDefaultRoundTrip(t *testing.T) {
-	// The on-disk default (config.Default()) should also round-trip cleanly
-	// — this is the path a user with an unmodified config takes.
 	cfg := config.Default()
-	got, lossy := StateFromConfig(cfg)
+	got, reasons := StateFromConfig(cfg)
 
-	if lossy {
-		t.Fatalf("config.Default() should not be lossy")
+	if len(reasons) > 0 {
+		t.Fatalf("config.Default() should be lossless, got reasons: %v", reasons)
 	}
 
 	want := DefaultState().Features
@@ -252,6 +251,104 @@ func TestStateFromConfig_ConfigDefaultRoundTrip(t *testing.T) {
 	}
 	if got.Emojis != "all" {
 		t.Errorf("Emojis: got %q want all", got.Emojis)
+	}
+}
+
+func TestStateFromConfig_LossyOnUnknownTheme(t *testing.T) {
+	cfg := defaultConfigWithLines([]string{"model"})
+	cfg.Theme = "my_custom_fork_theme"
+	_, reasons := StateFromConfig(cfg)
+	if !reasonsContain(reasons, "theme") {
+		t.Errorf("expected reasons to mention theme, got %v", reasons)
+	}
+}
+
+func TestStateFromConfig_LossyOnEmojiCustom(t *testing.T) {
+	cfg := defaultConfigWithLines([]string{"model"})
+	cfg.Emojis = config.EmojiCustom
+	_, reasons := StateFromConfig(cfg)
+	if !reasonsContain(reasons, "emoji") {
+		t.Errorf("expected reasons to mention emoji, got %v", reasons)
+	}
+}
+
+func TestStateFromConfig_LossyOnCustomThresholds(t *testing.T) {
+	cfg := defaultConfigWithLines([]string{"context_bar"})
+	cfg.ContextBar.Thresholds = []int{50, 80}
+	_, reasons := StateFromConfig(cfg)
+	if !reasonsContain(reasons, "threshold") {
+		t.Errorf("expected reasons to mention thresholds, got %v", reasons)
+	}
+}
+
+func TestStateFromConfig_LossyOnBarPercent(t *testing.T) {
+	cfg := defaultConfigWithLines([]string{"context_bar"})
+	cfg.ContextBar.Style = config.BarPercent
+	_, reasons := StateFromConfig(cfg)
+	if !reasonsContain(reasons, "bar style") {
+		t.Errorf("expected reasons to mention bar style for BarPercent, got %v", reasons)
+	}
+}
+
+func TestStateFromConfig_LossyOnTokensBarWithNonGradientStyle(t *testing.T) {
+	// context_tokens_bar always renders gradient; any other ContextBar.Style
+	// is silently re-coerced on save, so flag it.
+	cfg := defaultConfigWithLines([]string{"context_tokens_bar"})
+	cfg.ContextBar.Style = config.BarBlock
+	_, reasons := StateFromConfig(cfg)
+	if !reasonsContain(reasons, "bar style") {
+		t.Errorf("expected reasons to mention bar style for tokens_bar+BarBlock, got %v", reasons)
+	}
+}
+
+func TestStateFromConfig_LossyOnWidthZero(t *testing.T) {
+	cfg := defaultConfigWithLines([]string{"context_bar"})
+	cfg.ContextBar.Width = 0
+	_, reasons := StateFromConfig(cfg)
+	if !reasonsContain(reasons, "width") {
+		t.Errorf("expected reasons to mention width for width=0, got %v", reasons)
+	}
+}
+
+func TestStateFromConfig_FeatureKeyAsComponent_IsRejected(t *testing.T) {
+	// "git" is a feature key but not a real component (the real ones are
+	// git_branch / git_status). Should be treated as unknown.
+	cfg := defaultConfigWithLines([]string{"model", "git"})
+	_, reasons := StateFromConfig(cfg)
+	if !reasonsContain(reasons, "unknown") {
+		t.Errorf("expected reasons to mention unknown for feature-key-as-component, got %v", reasons)
+	}
+}
+
+func TestSaveConfirmDescription(t *testing.T) {
+	cases := []struct {
+		name              string
+		replacingExisting bool
+		reasons           []string
+		want              string
+	}{
+		{"fresh-no-existing", false, nil, ""},
+		{"fresh-replacing", true, nil, "This will replace your existing config."},
+		{"patch-lossless", false, nil, ""},
+		{"patch-lossy", true, []string{"custom theme name"}, "Replacing existing config. The following won't be preserved: custom theme name."},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := saveConfirmDescription(tc.replacingExisting, tc.reasons); got != tc.want {
+				t.Errorf("got %q want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestFormatLossyReasons(t *testing.T) {
+	if got := FormatLossyReasons(nil); got != "" {
+		t.Errorf("empty reasons should format to empty string, got %q", got)
+	}
+	got := FormatLossyReasons([]string{"custom theme name", "hand-edited layout"})
+	want := "The following won't be preserved: custom theme name, hand-edited layout."
+	if got != want {
+		t.Errorf("FormatLossyReasons: got %q want %q", got, want)
 	}
 }
 

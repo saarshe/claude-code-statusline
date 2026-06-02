@@ -47,40 +47,67 @@ func Run(cfgPath, settingsPath string) error {
 	}
 
 	state := DefaultState()
-	lossy := false
+	var lossyReasons []string
+	replacingExisting := false
 
 	fmt.Println(headerStyle.Render("claude-code-statusline setup"))
 
 	// ── Existing config detection ────────────────────────────────────────────
 
-	if _, statErr := os.Stat(cfgPath); statErr == nil {
-		existingCfg, loadErr := config.LoadFile(cfgPath)
-		if loadErr != nil {
-			return fmt.Errorf("could not read existing config at %s: %w", cfgPath, loadErr)
-		}
+	_, statErr := os.Stat(cfgPath)
+	configExists := statErr == nil
+	if statErr != nil && !errors.Is(statErr, os.ErrNotExist) {
+		return fmt.Errorf("could not check existing config at %s: %w", cfgPath, statErr)
+	}
 
-		choice := "patch"
-		if err := run(huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("Existing config detected").
-					Description(fmt.Sprintf("Found %s", cfgPath)).
-					Options(
-						huh.NewOption("Update your existing config", "patch"),
-						huh.NewOption("Start fresh (replace)", "fresh"),
-						huh.NewOption("Cancel", "cancel"),
-					).
-					Value(&choice),
-			),
-		)); err != nil {
-			return err
+	if configExists {
+		existingCfg, loadErr := config.LoadFile(cfgPath)
+
+		var choice string
+		if loadErr != nil {
+			// File exists but couldn't be parsed. Offer fresh or cancel —
+			// don't lock the user out of the wizard.
+			choice = "fresh"
+			if err := run(huh.NewForm(
+				huh.NewGroup(
+					huh.NewSelect[string]().
+						Title("Existing config couldn't be read").
+						Description(fmt.Sprintf("%s: %v", cfgPath, loadErr)).
+						Options(
+							huh.NewOption("Start fresh (replace the broken config)", "fresh"),
+							huh.NewOption("Cancel", "cancel"),
+						).
+						Value(&choice),
+				),
+			)); err != nil {
+				return err
+			}
+		} else {
+			choice = "patch"
+			if err := run(huh.NewForm(
+				huh.NewGroup(
+					huh.NewSelect[string]().
+						Title("Existing config detected").
+						Description(fmt.Sprintf("Found %s", cfgPath)).
+						Options(
+							huh.NewOption("Update your existing config", "patch"),
+							huh.NewOption("Start fresh (replace)", "fresh"),
+							huh.NewOption("Cancel", "cancel"),
+						).
+						Value(&choice),
+				),
+			)); err != nil {
+				return err
+			}
 		}
 
 		switch choice {
 		case "patch":
-			state, lossy = StateFromConfig(existingCfg)
+			state, lossyReasons = StateFromConfig(existingCfg)
+			replacingExisting = true
 		case "fresh":
 			// state stays as DefaultState()
+			replacingExisting = true
 		case "cancel":
 			fmt.Println(subtitleStyle.Render("Cancelled — no changes made."))
 			return nil
@@ -110,8 +137,8 @@ func Run(cfgPath, settingsPath string) error {
 	confirm := true
 	saveConfirm := huh.NewConfirm().
 		Title("💾 Save this configuration?")
-	if lossy {
-		saveConfirm = saveConfirm.Description("Note: your config has custom edits (layout / separator / unknown components) that will be replaced.")
+	if desc := saveConfirmDescription(replacingExisting, lossyReasons); desc != "" {
+		saveConfirm = saveConfirm.Description(desc)
 	}
 	saveConfirm = saveConfirm.Value(&confirm)
 	if err := runWithPreview(huh.NewForm(
@@ -172,6 +199,20 @@ func Run(cfgPath, settingsPath string) error {
 	fmt.Println()
 	fmt.Println(headerStyle.Render("Done!") + " " + subtitleStyle.Render("Restart Claude Code to see your status line."))
 	return nil
+}
+
+// saveConfirmDescription builds the description for the final save prompt.
+// When replacing an existing config, it warns the user. When the patch flow
+// couldn't fully round-trip the existing config, it lists what won't be
+// preserved.
+func saveConfirmDescription(replacingExisting bool, lossyReasons []string) string {
+	if len(lossyReasons) > 0 {
+		return "Replacing existing config. " + FormatLossyReasons(lossyReasons)
+	}
+	if replacingExisting {
+		return "This will replace your existing config."
+	}
+	return ""
 }
 
 // run executes a huh form with the Charm theme and converts ErrUserAborted
