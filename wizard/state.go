@@ -67,16 +67,16 @@ type WizardState struct {
 }
 
 // identityFeatures are shown in the first row (who/where am I).
-var identityFeatures = []string{"model", "git", "lines_changed", "directory", "agent", "worktree", "pr"}
+var identityFeatures = []string{"model", "effort", "agent", "directory", "worktree", "git", "lines_changed", "pr"}
 
 // statsFeatures are shown in the second row (numbers/metrics).
-var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration", "effort", "rate_limits"}
+var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration", "rate_limits"}
 
 // DefaultState returns a WizardState that matches config.Default().
 func DefaultState() *WizardState {
 	return &WizardState{
 		Theme:           "default",
-		Features:        []string{"model", "git", "lines_changed", "directory", "agent", "worktree", "pr", "context", "tokens", "cache", "cost", "duration", "effort", "rate_limits"},
+		Features:        []string{"model", "effort", "agent", "directory", "worktree", "git", "lines_changed", "pr", "context", "tokens", "cache", "cost", "duration", "rate_limits"},
 		ContextStyle:    "solid",
 		TokenStyle:      "full",
 		CacheStyle:      "counts",

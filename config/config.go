@@ -61,8 +61,8 @@ func Default() *Config {
 			Character: "|",
 		},
 		Lines: []LineConfig{
-			{Components: []string{"model", "git_status", "lines_changed", "directory", "agent", "worktree", "pr"}},
-			{Components: []string{"context_bar", "tokens_full", "cache", "cost", "duration", "effort", "rate_limits_reset"}},
+			{Components: []string{"model", "effort", "agent", "directory", "worktree", "git_status", "lines_changed", "pr"}},
+			{Components: []string{"context_bar", "tokens_full", "cache", "cost", "duration", "rate_limits_reset"}},
 		},
 	}
 }
