@@ -46,7 +46,7 @@ func Run(cfgPath, settingsPath string) error {
 		settingsPath = filepath.Join(home, ".claude", "settings.json")
 	}
 
-	state := DefaultState()
+	var state *WizardState
 	var lossyReasons []string
 	replacingExisting := false
 
@@ -60,76 +60,56 @@ func Run(cfgPath, settingsPath string) error {
 		return fmt.Errorf("could not check existing config at %s: %w", cfgPath, statErr)
 	}
 
-	if configExists {
-		existingCfg, loadErr := config.LoadFile(cfgPath)
+	// Outer loop: picker → steps. Pressing Escape from the first step
+	// bounces back to the picker so the user can switch patch/fresh.
+	for {
+		state = DefaultState()
+		lossyReasons = nil
+		replacingExisting = false
 
-		var choice string
-		if loadErr != nil {
-			// File exists but couldn't be parsed. Offer fresh or cancel —
-			// don't lock the user out of the wizard.
-			choice = "fresh"
-			if err := run(huh.NewForm(
-				huh.NewGroup(
-					huh.NewSelect[string]().
-						Title("Existing config couldn't be read").
-						Description(fmt.Sprintf("%s: %v", cfgPath, loadErr)).
-						Options(
-							huh.NewOption("Start fresh (replace the broken config)", "fresh"),
-							huh.NewOption("Cancel", "cancel"),
-						).
-						Value(&choice),
-				),
-			)); err != nil {
+		if configExists {
+			existingCfg, loadErr := config.LoadFile(cfgPath)
+			choice, err := pickExistingConfigAction(cfgPath, loadErr)
+			if err != nil {
 				return err
 			}
-		} else {
-			choice = "patch"
-			if err := run(huh.NewForm(
-				huh.NewGroup(
-					huh.NewSelect[string]().
-						Title("Existing config detected").
-						Description(fmt.Sprintf("Found %s", cfgPath)).
-						Options(
-							huh.NewOption("Update your existing config", "patch"),
-							huh.NewOption("Start fresh (replace)", "fresh"),
-							huh.NewOption("Cancel", "cancel"),
-						).
-						Value(&choice),
-				),
-			)); err != nil {
-				return err
+			switch choice {
+			case "patch":
+				state, lossyReasons = StateFromConfig(existingCfg)
+				replacingExisting = true
+			case "fresh":
+				// state stays as DefaultState()
+				replacingExisting = true
+			case "cancel":
+				fmt.Println(subtitleStyle.Render("Cancelled — no changes made."))
+				return nil
 			}
 		}
 
-		switch choice {
-		case "patch":
-			state, lossyReasons = StateFromConfig(existingCfg)
-			replacingExisting = true
-		case "fresh":
-			// state stays as DefaultState()
-			replacingExisting = true
-		case "cancel":
-			fmt.Println(subtitleStyle.Render("Cancelled — no changes made."))
-			return nil
-		}
-	}
-
-	// ── Interactive steps ────────────────────────────────────────────────────
-
-	for i := 0; i < len(Steps); {
-		step := Steps[i]
-		if step.ShouldRun != nil && !step.ShouldRun(state) {
-			i++
-			continue
-		}
-		if err := step.Run(state); err != nil {
-			if errors.Is(err, errGoBack) {
-				i = prevRunnableStep(Steps, i, state)
+		backToPicker := false
+		for i := 0; i < len(Steps); {
+			step := Steps[i]
+			if step.ShouldRun != nil && !step.ShouldRun(state) {
+				i++
 				continue
 			}
-			return err
+			if err := step.Run(state); err != nil {
+				if errors.Is(err, errGoBack) {
+					if i == 0 && configExists {
+						backToPicker = true
+						break
+					}
+					i = prevRunnableStep(Steps, i, state)
+					continue
+				}
+				return err
+			}
+			i++
 		}
-		i++
+		if backToPicker {
+			continue
+		}
+		break
 	}
 
 	// ── Confirm ──────────────────────────────────────────────────────────────
@@ -199,6 +179,44 @@ func Run(cfgPath, settingsPath string) error {
 	fmt.Println()
 	fmt.Println(headerStyle.Render("Done!") + " " + subtitleStyle.Render("Restart Claude Code to see your status line."))
 	return nil
+}
+
+// pickExistingConfigAction shows the picker for what to do with an existing
+// config file. When loadErr is non-nil the file exists but failed to parse;
+// the picker offers fresh/cancel instead of the three-way choice.
+func pickExistingConfigAction(cfgPath string, loadErr error) (string, error) {
+	if loadErr != nil {
+		choice := "fresh"
+		err := run(huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("Existing config couldn't be read").
+					Description(fmt.Sprintf("%s: %v", cfgPath, loadErr)).
+					Options(
+						huh.NewOption("Start fresh (replace the broken config)", "fresh"),
+						huh.NewOption("Cancel", "cancel"),
+					).
+					Value(&choice),
+			),
+		))
+		return choice, err
+	}
+
+	choice := "patch"
+	err := run(huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Existing config detected").
+				Description(fmt.Sprintf("Found %s", cfgPath)).
+				Options(
+					huh.NewOption("Update your existing config", "patch"),
+					huh.NewOption("Start fresh (replace)", "fresh"),
+					huh.NewOption("Cancel", "cancel"),
+				).
+				Value(&choice),
+		),
+	))
+	return choice, err
 }
 
 // saveConfirmDescription builds the description for the final save prompt.
