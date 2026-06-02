@@ -48,7 +48,7 @@ func StateFromConfig(cfg *config.Config) (*WizardState, bool) {
 
 	state.InvalidateLayout()
 	canonical := state.InferLayout()
-	if !sameLayout(canonical, cfg.Lines) {
+	if !sameComponents(canonical, cfg.Lines) {
 		lossy = true
 	}
 
@@ -140,15 +140,16 @@ func orderFeatures(features []string) []string {
 	return out
 }
 
-// sameLayout reports whether the components in each row of a and b match.
-func sameLayout(a [][]string, b []config.LineConfig) bool {
-	if len(a) != len(b) {
-		return false
+// sameComponents reports whether the flat component sequences match. Line
+// wrapping is terminal-width-adaptive and the wizard always re-infers it on
+// save, so we ignore where rows break and only compare the underlying order.
+func sameComponents(canonical [][]string, cfgLines []config.LineConfig) bool {
+	var a, b []string
+	for _, row := range canonical {
+		a = append(a, row...)
 	}
-	for i := range a {
-		if !reflect.DeepEqual(a[i], b[i].Components) {
-			return false
-		}
+	for _, l := range cfgLines {
+		b = append(b, l.Components...)
 	}
-	return true
+	return reflect.DeepEqual(a, b)
 }

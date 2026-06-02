@@ -202,6 +202,59 @@ func TestStateFromConfig_NotLossyForCanonicalLayout(t *testing.T) {
 	}
 }
 
+func TestStateFromConfig_FeatureOrderIsCanonical(t *testing.T) {
+	// Hand-arranged line: stats before identity. Features should still come
+	// out in canonical order (identity before stats).
+	cfg := defaultConfigWithLines([]string{"cost", "model", "git_status"})
+	got, _ := StateFromConfig(cfg)
+
+	want := []string{"model", "git", "cost"}
+	if !reflect.DeepEqual(got.Features, want) {
+		t.Errorf("Features order: got %v want %v", got.Features, want)
+	}
+}
+
+func TestStateFromConfig_LossyOnDuplicateFeatureComponents(t *testing.T) {
+	// Two components mapping to the same feature is a hand-edit the wizard
+	// can't represent — keep the first, mark lossy. (Layout comparison
+	// catches it because the canonical layout collapses to one component.)
+	cfg := defaultConfigWithLines([]string{"cache", "cache_hit"})
+	got, lossy := StateFromConfig(cfg)
+
+	if !lossy {
+		t.Errorf("expected lossy=true for duplicate feature components")
+	}
+	if !equalFeatures(got.Features, []string{"cache"}) {
+		t.Errorf("Features should dedupe to single 'cache': got %v", got.Features)
+	}
+	// The first occurrence wins.
+	if got.CacheStyle != "counts" {
+		t.Errorf("CacheStyle: got %q want %q (first occurrence wins)", got.CacheStyle, "counts")
+	}
+}
+
+func TestStateFromConfig_ConfigDefaultRoundTrip(t *testing.T) {
+	// The on-disk default (config.Default()) should also round-trip cleanly
+	// — this is the path a user with an unmodified config takes.
+	cfg := config.Default()
+	got, lossy := StateFromConfig(cfg)
+
+	if lossy {
+		t.Fatalf("config.Default() should not be lossy")
+	}
+
+	want := DefaultState().Features
+	if !equalFeatures(got.Features, want) {
+		t.Errorf("Features: got %v want %v", got.Features, want)
+	}
+	if got.Theme != "default" {
+		t.Errorf("Theme: got %q want default", got.Theme)
+	}
+	if got.Emojis != "all" {
+		t.Errorf("Emojis: got %q want all", got.Emojis)
+	}
+}
+
 // defaultConfigWithLines builds a config with default everything except the
 // component lines, which are placed on a single line.
 func defaultConfigWithLines(comps []string) *config.Config {
