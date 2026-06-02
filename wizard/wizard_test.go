@@ -356,6 +356,36 @@ func TestWizardState_TokenStyle_Full(t *testing.T) {
 	}
 }
 
+func TestWizardState_HasRateLimits_True(t *testing.T) {
+	state := &WizardState{Features: []string{"model", "rate_limits"}}
+	if !state.HasRateLimits() {
+		t.Error("expected HasRateLimits() = true")
+	}
+}
+
+func TestWizardState_HasRateLimits_False(t *testing.T) {
+	state := &WizardState{Features: []string{"model", "cost"}}
+	if state.HasRateLimits() {
+		t.Error("expected HasRateLimits() = false")
+	}
+}
+
+func TestWizardState_RateLimitsStyle_Pct(t *testing.T) {
+	state := &WizardState{Features: []string{"rate_limits"}, RateLimitsStyle: "pct"}
+	cfg := state.ToConfig()
+	if cfg.Lines[0].Components[0] != "rate_limits" {
+		t.Errorf("expected 'rate_limits', got %v", cfg.Lines[0].Components)
+	}
+}
+
+func TestWizardState_RateLimitsStyle_Reset(t *testing.T) {
+	state := &WizardState{Features: []string{"rate_limits"}, RateLimitsStyle: "reset"}
+	cfg := state.ToConfig()
+	if cfg.Lines[0].Components[0] != "rate_limits_reset" {
+		t.Errorf("expected 'rate_limits_reset', got %v", cfg.Lines[0].Components)
+	}
+}
+
 func TestWizardState_HasTokens(t *testing.T) {
 	state := &WizardState{Features: []string{"tokens"}}
 	if !state.HasTokens() {

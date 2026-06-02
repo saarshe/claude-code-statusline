@@ -53,6 +53,16 @@ func TestParse_FullInput(t *testing.T) {
 			"branch": "feature-branch",
 			"original_cwd": "/home/user/project",
 			"original_branch": "main"
+		},
+		"effort": {"level": "high"},
+		"rate_limits": {
+			"five_hour": {"used_percentage": 23.5, "resets_at": 1738425600},
+			"seven_day": {"used_percentage": 41.2, "resets_at": 1738857600}
+		},
+		"pr": {
+			"number": 1234,
+			"url": "https://github.com/owner/repo/pull/1234",
+			"review_state": "approved"
 		}
 	}`
 
@@ -133,6 +143,30 @@ func TestParse_FullInput(t *testing.T) {
 	if input.Worktree.OriginalBranch != "main" {
 		t.Errorf("Worktree.OriginalBranch = %q, want %q", input.Worktree.OriginalBranch, "main")
 	}
+	if input.Effort == nil || input.Effort.Level != "high" {
+		t.Errorf("Effort = %v, want level=high", input.Effort)
+	}
+	if input.RateLimits == nil || input.RateLimits.FiveHour == nil {
+		t.Fatalf("RateLimits.FiveHour = nil, want non-nil")
+	}
+	if input.RateLimits.FiveHour.UsedPercentage != 23.5 {
+		t.Errorf("FiveHour.UsedPercentage = %v, want 23.5", input.RateLimits.FiveHour.UsedPercentage)
+	}
+	if input.RateLimits.FiveHour.ResetsAt != 1738425600 {
+		t.Errorf("FiveHour.ResetsAt = %d, want 1738425600", input.RateLimits.FiveHour.ResetsAt)
+	}
+	if input.RateLimits.SevenDay == nil || input.RateLimits.SevenDay.UsedPercentage != 41.2 {
+		t.Errorf("SevenDay = %v, want UsedPercentage=41.2", input.RateLimits.SevenDay)
+	}
+	if input.PR == nil || input.PR.Number != 1234 {
+		t.Errorf("PR = %v, want number=1234", input.PR)
+	}
+	if input.PR.URL != "https://github.com/owner/repo/pull/1234" {
+		t.Errorf("PR.URL = %q", input.PR.URL)
+	}
+	if input.PR.ReviewState != "approved" {
+		t.Errorf("PR.ReviewState = %q, want approved", input.PR.ReviewState)
+	}
 }
 
 func TestParse_NullOptionalFields(t *testing.T) {
@@ -181,6 +215,15 @@ func TestParse_NullOptionalFields(t *testing.T) {
 	if input.Worktree != nil {
 		t.Errorf("Worktree = %v, want nil", input.Worktree)
 	}
+	if input.Effort != nil {
+		t.Errorf("Effort = %v, want nil", input.Effort)
+	}
+	if input.RateLimits != nil {
+		t.Errorf("RateLimits = %v, want nil", input.RateLimits)
+	}
+	if input.PR != nil {
+		t.Errorf("PR = %v, want nil", input.PR)
+	}
 }
 
 func TestParse_MinimalJSON(t *testing.T) {
@@ -200,6 +243,29 @@ func TestParse_MinimalJSON(t *testing.T) {
 	}
 	if input.ContextWindow.CurrentUsage != nil {
 		t.Errorf("CurrentUsage = %v, want nil", input.ContextWindow.CurrentUsage)
+	}
+}
+
+func TestParse_RateLimitsPartialWindow(t *testing.T) {
+	// Each window is independently optional per the statusline docs:
+	// "Each window (five_hour, seven_day) may be independently absent."
+	json := `{
+		"rate_limits": {
+			"five_hour": {"used_percentage": 12.0, "resets_at": 1738425600}
+		}
+	}`
+	input, err := Parse(strings.NewReader(json))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if input.RateLimits == nil || input.RateLimits.FiveHour == nil {
+		t.Fatal("FiveHour should be present")
+	}
+	if input.RateLimits.FiveHour.UsedPercentage != 12.0 {
+		t.Errorf("FiveHour.UsedPercentage = %v, want 12.0", input.RateLimits.FiveHour.UsedPercentage)
+	}
+	if input.RateLimits.SevenDay != nil {
+		t.Errorf("SevenDay should be nil when omitted, got %v", input.RateLimits.SevenDay)
 	}
 }
 

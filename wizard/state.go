@@ -49,6 +49,11 @@ type WizardState struct {
 	// Only used when "tokens" is in Features.
 	TokenStyle string
 
+	// RateLimitsStyle controls how rate limit usage is displayed.
+	// "pct" → rate_limits (percentage only); "reset" → rate_limits_reset (with countdown).
+	// Only used when "rate_limits" is in Features.
+	RateLimitsStyle string
+
 	// Emojis is "all" or "none".
 	Emojis string
 
@@ -62,23 +67,24 @@ type WizardState struct {
 }
 
 // identityFeatures are shown in the first row (who/where am I).
-var identityFeatures = []string{"model", "git", "lines_changed", "directory", "agent", "worktree"}
+var identityFeatures = []string{"model", "git", "lines_changed", "directory", "agent", "worktree", "pr"}
 
 // statsFeatures are shown in the second row (numbers/metrics).
-var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration"}
+var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration", "effort", "rate_limits"}
 
 // DefaultState returns a WizardState that matches config.Default().
 func DefaultState() *WizardState {
 	return &WizardState{
-		Theme:        "default",
-		Features:     []string{"model", "git", "lines_changed", "directory", "agent", "worktree", "context", "tokens", "cache", "cost", "duration"},
-		ContextStyle: "solid",
-		TokenStyle:   "full",
-		CacheStyle:   "counts",
-		LinesStyle:   "detail",
-		GitStyle:     "status",
-		Emojis:       "all",
-		BarWidth:     10,
+		Theme:           "default",
+		Features:        []string{"model", "git", "lines_changed", "directory", "agent", "worktree", "pr", "context", "tokens", "cache", "cost", "duration", "effort", "rate_limits"},
+		ContextStyle:    "solid",
+		TokenStyle:      "full",
+		CacheStyle:      "counts",
+		LinesStyle:      "detail",
+		GitStyle:        "status",
+		RateLimitsStyle: "reset",
+		Emojis:          "all",
+		BarWidth:        10,
 	}
 }
 
@@ -96,6 +102,9 @@ func (s *WizardState) HasTokens() bool { return s.hasFeature("tokens") }
 
 // HasGit reports whether the user selected the git feature.
 func (s *WizardState) HasGit() bool { return s.hasFeature("git") }
+
+// HasRateLimits reports whether the user selected the rate_limits feature.
+func (s *WizardState) HasRateLimits() bool { return s.hasFeature("rate_limits") }
 
 func (s *WizardState) hasFeature(key string) bool {
 	for _, f := range s.Features {
@@ -119,6 +128,8 @@ func (s *WizardState) featureStyleValue(feature string) string {
 		return s.LinesStyle
 	case "git":
 		return s.GitStyle
+	case "rate_limits":
+		return s.RateLimitsStyle
 	default:
 		return ""
 	}

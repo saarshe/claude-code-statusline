@@ -191,6 +191,67 @@ func TestRenderWithTheme_ThemeSeparatorOverridesConfig(t *testing.T) {
 	}
 }
 
+func TestRender_NewComponentsComposeTogether(t *testing.T) {
+	// Integration check: exercise all four new components through the full
+	// render pipeline (registry, separator, theme styling) at once.
+	cfg := config.Default()
+	cfg.Lines = []config.LineConfig{
+		{Components: []string{"model", "effort", "pr"}},
+		{Components: []string{"rate_limits_reset"}},
+	}
+	input := fullInput()
+	input.Effort = &schema.Effort{Level: "high"}
+	input.PR = &schema.PR{Number: 99, URL: "https://example.com/99", ReviewState: "approved"}
+	input.RateLimits = &schema.RateLimits{
+		FiveHour: &schema.RateLimitWindow{UsedPercentage: 25, ResetsAt: 9999999999},
+		SevenDay: &schema.RateLimitWindow{UsedPercentage: 50, ResetsAt: 9999999999},
+	}
+
+	output := Render(input, cfg)
+	lines := strings.Split(output, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 lines, got %d: %q", len(lines), output)
+	}
+	if !strings.Contains(lines[0], "high") {
+		t.Errorf("line 1 should contain effort 'high', got %q", lines[0])
+	}
+	if !strings.Contains(lines[0], "#99") {
+		t.Errorf("line 1 should contain PR '#99', got %q", lines[0])
+	}
+	// OSC 8 hyperlink survives the render pipeline.
+	if !strings.Contains(lines[0], "\x1b]8;;https://example.com/99\x07") {
+		t.Errorf("line 1 should contain OSC 8 link, got %q", lines[0])
+	}
+	if !strings.Contains(lines[1], "5h 25%") || !strings.Contains(lines[1], "7d 50%") {
+		t.Errorf("line 2 should contain both rate-limit windows, got %q", lines[1])
+	}
+	// Separator should appear between effort and pr on line 1.
+	if !strings.Contains(lines[0], "|") {
+		t.Errorf("line 1 should contain separator between components, got %q", lines[0])
+	}
+}
+
+func TestRender_NewComponentsAllAbsent_ProducesNoOutput(t *testing.T) {
+	// When the JSON omits the new fields entirely (e.g. API-key user, model
+	// without effort, no open PR), a line containing only the new components
+	// should render as empty and be dropped from the output.
+	cfg := config.Default()
+	cfg.Lines = []config.LineConfig{
+		{Components: []string{"effort", "pr", "rate_limits_reset"}},
+		{Components: []string{"model"}},
+	}
+	input := &schema.Input{Model: schema.Model{DisplayName: "Opus"}}
+
+	output := Render(input, cfg)
+	lines := strings.Split(output, "\n")
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 line (all-absent line skipped), got %d: %q", len(lines), output)
+	}
+	if !strings.Contains(lines[0], "Opus") {
+		t.Errorf("surviving line should contain 'Opus', got %q", lines[0])
+	}
+}
+
 func TestRenderWithTheme_UnknownComponentSkipped(t *testing.T) {
 	cfg := config.Default()
 	cfg.Lines = []config.LineConfig{
