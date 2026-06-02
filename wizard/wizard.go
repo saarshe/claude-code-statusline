@@ -47,8 +47,45 @@ func Run(cfgPath, settingsPath string) error {
 	}
 
 	state := DefaultState()
+	lossy := false
 
 	fmt.Println(headerStyle.Render("claude-code-statusline setup"))
+
+	// ── Existing config detection ────────────────────────────────────────────
+
+	if _, statErr := os.Stat(cfgPath); statErr == nil {
+		existingCfg, loadErr := config.LoadFile(cfgPath)
+		if loadErr != nil {
+			return fmt.Errorf("could not read existing config at %s: %w", cfgPath, loadErr)
+		}
+
+		choice := "patch"
+		if err := run(huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("Existing config detected").
+					Description(fmt.Sprintf("Found %s", cfgPath)).
+					Options(
+						huh.NewOption("Update your existing config", "patch"),
+						huh.NewOption("Start fresh (replace)", "fresh"),
+						huh.NewOption("Cancel", "cancel"),
+					).
+					Value(&choice),
+			),
+		)); err != nil {
+			return err
+		}
+
+		switch choice {
+		case "patch":
+			state, lossy = StateFromConfig(existingCfg)
+		case "fresh":
+			// state stays as DefaultState()
+		case "cancel":
+			fmt.Println(subtitleStyle.Render("Cancelled — no changes made."))
+			return nil
+		}
+	}
 
 	// ── Interactive steps ────────────────────────────────────────────────────
 
@@ -71,12 +108,14 @@ func Run(cfgPath, settingsPath string) error {
 	// ── Confirm ──────────────────────────────────────────────────────────────
 
 	confirm := true
+	saveConfirm := huh.NewConfirm().
+		Title("💾 Save this configuration?")
+	if lossy {
+		saveConfirm = saveConfirm.Description("Note: your config has custom edits (layout / separator / unknown components) that will be replaced.")
+	}
+	saveConfirm = saveConfirm.Value(&confirm)
 	if err := runWithPreview(huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title("💾 Save this configuration?").
-				Value(&confirm),
-		),
+		huh.NewGroup(saveConfirm),
 	), state); err != nil {
 		return err
 	}
