@@ -134,6 +134,26 @@ func TestRateLimitsReset_IncludesCountdown(t *testing.T) {
 	}
 }
 
+func TestRateLimits_EmojiOff_UsesTextPrefix(t *testing.T) {
+	data := &schema.Input{RateLimits: &schema.RateLimits{
+		FiveHour: &schema.RateLimitWindow{UsedPercentage: 23},
+	}}
+	cfg := config.Default()
+	result := Get("rate_limits").Render(data, cfg, theme.Get("default"))
+	if !strings.Contains(result, "📈") {
+		t.Errorf("expected 📈 emoji when emojis on, got %q", result)
+	}
+
+	cfg.Emojis = config.EmojiNone
+	result = Get("rate_limits").Render(data, cfg, theme.Get("default"))
+	if strings.Contains(result, "📈") {
+		t.Errorf("expected no emoji when disabled, got %q", result)
+	}
+	if !strings.Contains(result, "Limits: ") {
+		t.Errorf("expected 'Limits: ' text prefix when emojis off, got %q", result)
+	}
+}
+
 func TestFormatResetCountdown(t *testing.T) {
 	tests := []struct {
 		d    time.Duration

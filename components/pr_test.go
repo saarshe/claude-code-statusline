@@ -77,6 +77,24 @@ func TestPR_WrapsHyperlinkWhenURLPresent(t *testing.T) {
 	}
 }
 
+func TestPR_EmojiOff_UsesTextPrefix(t *testing.T) {
+	data := &schema.Input{PR: &schema.PR{Number: 42, ReviewState: "approved"}}
+	cfg := config.Default()
+	result := Get("pr").Render(data, cfg, theme.Get("default"))
+	if !strings.Contains(result, "🔀") {
+		t.Errorf("expected 🔀 emoji when emojis on, got %q", result)
+	}
+
+	cfg.Emojis = config.EmojiNone
+	result = Get("pr").Render(data, cfg, theme.Get("default"))
+	if strings.Contains(result, "🔀") {
+		t.Errorf("expected no emoji when disabled, got %q", result)
+	}
+	if !strings.Contains(result, "PR ") {
+		t.Errorf("expected 'PR ' text prefix when emojis off, got %q", result)
+	}
+}
+
 func TestPR_NoHyperlinkWhenURLEmpty(t *testing.T) {
 	data := &schema.Input{PR: &schema.PR{Number: 7}}
 	result := Get("pr").Render(data, config.Default(), theme.Get("default"))
