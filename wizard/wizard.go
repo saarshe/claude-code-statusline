@@ -46,37 +46,83 @@ func Run(cfgPath, settingsPath string) error {
 		settingsPath = filepath.Join(home, ".claude", "settings.json")
 	}
 
-	state := DefaultState()
+	var state *WizardState
+	var lossyReasons []string
+	replacingExisting := false
 
 	fmt.Println(headerStyle.Render("claude-code-statusline setup"))
 
-	// ── Interactive steps ────────────────────────────────────────────────────
+	// ── Existing config detection ────────────────────────────────────────────
 
-	for i := 0; i < len(Steps); {
-		step := Steps[i]
-		if step.ShouldRun != nil && !step.ShouldRun(state) {
-			i++
-			continue
+	_, statErr := os.Stat(cfgPath)
+	configExists := statErr == nil
+	if statErr != nil && !errors.Is(statErr, os.ErrNotExist) {
+		return fmt.Errorf("could not check existing config at %s: %w", cfgPath, statErr)
+	}
+
+	// Outer loop: picker → steps. Pressing Escape from the first step
+	// bounces back to the picker so the user can switch patch/fresh.
+	for {
+		state = DefaultState()
+		lossyReasons = nil
+		replacingExisting = false
+
+		if configExists {
+			existingCfg, loadErr := config.LoadFile(cfgPath)
+			choice, err := pickExistingConfigAction(cfgPath, loadErr)
+			if err != nil {
+				return err
+			}
+			switch choice {
+			case "patch":
+				state, lossyReasons = StateFromConfig(existingCfg)
+				replacingExisting = true
+			case "fresh":
+				// state stays as DefaultState()
+				replacingExisting = true
+			case "cancel":
+				fmt.Println(subtitleStyle.Render("Cancelled — no changes made."))
+				return nil
+			}
 		}
-		if err := step.Run(state); err != nil {
-			if errors.Is(err, errGoBack) {
-				i = prevRunnableStep(Steps, i, state)
+
+		backToPicker := false
+		for i := 0; i < len(Steps); {
+			step := Steps[i]
+			if step.ShouldRun != nil && !step.ShouldRun(state) {
+				i++
 				continue
 			}
-			return err
+			if err := step.Run(state); err != nil {
+				if errors.Is(err, errGoBack) {
+					if i == 0 && configExists {
+						backToPicker = true
+						break
+					}
+					i = prevRunnableStep(Steps, i, state)
+					continue
+				}
+				return err
+			}
+			i++
 		}
-		i++
+		if backToPicker {
+			continue
+		}
+		break
 	}
 
 	// ── Confirm ──────────────────────────────────────────────────────────────
 
 	confirm := true
+	saveConfirm := huh.NewConfirm().
+		Title("💾 Save this configuration?")
+	if desc := saveConfirmDescription(replacingExisting, lossyReasons); desc != "" {
+		saveConfirm = saveConfirm.Description(desc)
+	}
+	saveConfirm = saveConfirm.Value(&confirm)
 	if err := runWithPreview(huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title("💾 Save this configuration?").
-				Value(&confirm),
-		),
+		huh.NewGroup(saveConfirm),
 	), state); err != nil {
 		return err
 	}
@@ -133,6 +179,58 @@ func Run(cfgPath, settingsPath string) error {
 	fmt.Println()
 	fmt.Println(headerStyle.Render("Done!") + " " + subtitleStyle.Render("Restart Claude Code to see your status line."))
 	return nil
+}
+
+// pickExistingConfigAction shows the picker for what to do with an existing
+// config file. When loadErr is non-nil the file exists but failed to parse;
+// the picker offers fresh/cancel instead of the three-way choice.
+func pickExistingConfigAction(cfgPath string, loadErr error) (string, error) {
+	if loadErr != nil {
+		choice := "fresh"
+		err := run(huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("Existing config couldn't be read").
+					Description(fmt.Sprintf("%s: %v", cfgPath, loadErr)).
+					Options(
+						huh.NewOption("Start fresh (replace the broken config)", "fresh"),
+						huh.NewOption("Cancel", "cancel"),
+					).
+					Value(&choice),
+			),
+		))
+		return choice, err
+	}
+
+	choice := "patch"
+	err := run(huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Existing config detected").
+				Description(fmt.Sprintf("Found %s", cfgPath)).
+				Options(
+					huh.NewOption("Update your existing config", "patch"),
+					huh.NewOption("Start fresh (replace)", "fresh"),
+					huh.NewOption("Cancel", "cancel"),
+				).
+				Value(&choice),
+		),
+	))
+	return choice, err
+}
+
+// saveConfirmDescription builds the description for the final save prompt.
+// When replacing an existing config, it warns the user. When the patch flow
+// couldn't fully round-trip the existing config, it lists what won't be
+// preserved.
+func saveConfirmDescription(replacingExisting bool, lossyReasons []string) string {
+	if len(lossyReasons) > 0 {
+		return "Replacing existing config. " + FormatLossyReasons(lossyReasons)
+	}
+	if replacingExisting {
+		return "This will replace your existing config."
+	}
+	return ""
 }
 
 // run executes a huh form with the Charm theme and converts ErrUserAborted
