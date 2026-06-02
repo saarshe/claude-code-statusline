@@ -8,13 +8,17 @@ A customizable status line for [Claude Code](https://code.claude.com/docs/en). S
 
 📊 **Context window** — visual progress bar with color-coded thresholds (block, solid, ASCII, gradient, or percent)
 
-🤖 **Model info** — see which Claude model is active
+🤖 **Model info** — see which Claude model is active, with reasoning **effort** level (low → max) shown alongside
 
 🔢 **Token usage** — input/output counts, cache hit rates, session totals — four verbosity levels
 
 💰 **Cost tracking** — running session cost in USD
 
+📈 **Rate limits** — 5-hour and 7-day usage windows with threshold colors and reset countdowns (Pro/Max)
+
 🌿 **Git status** — current branch, modified/added file counts, lines changed
+
+🔀 **PR status** — open PR for the current branch with review-state glyph (approved / pending / changes / draft) and clickable link
 
 ⏱️ **Duration** — session elapsed time
 
@@ -24,7 +28,7 @@ A customizable status line for [Claude Code](https://code.claude.com/docs/en). S
 
 📐 **Adaptive layout** — components flow across 1–3 lines, responsive to terminal width
 
-🧙 **Setup wizard** — interactive configurator with live preview, back navigation, and auto-wiring to Claude Code
+🧙 **Setup wizard** — interactive configurator with live preview, back navigation, and auto-wiring to Claude Code. Re-running `init` on an existing config offers to patch it in place, pre-filling every step with your current values
 
 ![Setup wizard](assets/wizard.gif)
 
@@ -54,7 +58,7 @@ Run the interactive wizard:
 claude-code-statusline init
 ```
 
-This lets you pick which components to show, choose a theme, and automatically wires it into Claude Code's `settings.json`.
+This lets you pick which components to show, choose a theme, and automatically wires it into Claude Code's `settings.json`. If a config already exists, the wizard offers to update it (pre-filled), start fresh, or cancel — with a warning if any hand-edited fields can't be round-tripped.
 
 ## How it works
 
