@@ -337,6 +337,40 @@ func TestRenderWithTheme_FixedIgnoresColumns(t *testing.T) {
 	}
 }
 
+func sliceContains(s []string, want string) bool {
+	for _, v := range s {
+		if v == want {
+			return true
+		}
+	}
+	return false
+}
+
+func TestFlowComponents_PacksGreedily(t *testing.T) {
+	// A wide component (full session id, ~39 cols) followed by several small
+	// ones. At width 45 the session id can't share a line, but pr + cost +
+	// duration easily fit together. Greedy first-fit packs them on one line;
+	// recursive halving strands them on separate lines.
+	th := theme.Get("default")
+	cfg := config.Default()
+	input := &schema.Input{
+		SessionID: "345c8498-9f0b-47dd-a9b4-9eb87b61f29f",
+		PR:        &schema.PR{Number: 32, URL: "https://example.com/32", ReviewState: "pending"},
+		Cost:      schema.Cost{TotalCostUSD: 0.04, TotalDurationMS: 21000},
+	}
+
+	rows := FlowComponents(input, cfg, th, []string{"session_id", "pr", "cost", "duration"}, 45)
+
+	if len(rows) != 2 {
+		t.Fatalf("expected 2 rows (small components packed after the wide one), got %d: %v", len(rows), rows)
+	}
+	for _, want := range []string{"pr", "cost", "duration"} {
+		if !sliceContains(rows[1], want) {
+			t.Errorf("expected %q packed onto the second line, got %v", want, rows[1])
+		}
+	}
+}
+
 func TestRenderWithTheme_UnknownComponentSkipped(t *testing.T) {
 	cfg := config.Default()
 	cfg.Lines = []config.LineConfig{

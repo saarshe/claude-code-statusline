@@ -52,45 +52,34 @@ func rowsForLayout(input *schema.Input, cfg *config.Config, th *theme.Theme) [][
 }
 
 // FlowComponents arranges comps across lines so that, when rendered, no line is
-// wider than width. It starts with everything on one line and repeatedly splits
-// the widest overflowing line in half until every line fits (or is reduced to a
-// single component, which cannot be split further). Width is measured by
-// actually rendering each candidate row, so the result matches real output.
+// wider than width. It packs greedily in order: each component joins the
+// current line if it still fits, otherwise it starts a new line. This fills
+// each line to capacity and minimizes line count (a single component wider than
+// width sits alone, since it cannot be split). Width is measured by actually
+// rendering each candidate line, so the result matches real output.
 func FlowComponents(input *schema.Input, cfg *config.Config, th *theme.Theme, comps []string, width int) [][]string {
 	if len(comps) == 0 {
 		return nil
 	}
 
 	sep := separator(cfg, th)
-	layout := [][]string{comps}
+	var rows [][]string
+	var cur []string
 
-	for {
-		widest, widestW := -1, 0
-		exceeds := false
-		for i, row := range layout {
-			w := lipgloss.Width(renderRow(input, cfg, th, sep, row))
-			if w > width {
-				exceeds = true
-			}
-			if w > widestW {
-				widest, widestW = i, w
-			}
+	for _, key := range comps {
+		candidate := append(append([]string{}, cur...), key)
+		if len(cur) > 0 && lipgloss.Width(renderRow(input, cfg, th, sep, candidate)) > width {
+			rows = append(rows, cur)
+			cur = []string{key}
+			continue
 		}
-		if !exceeds || widest < 0 || len(layout[widest]) <= 1 {
-			break
-		}
-
-		mid := len(layout[widest]) / 2
-		left := layout[widest][:mid]
-		right := layout[widest][mid:]
-		newLayout := make([][]string, 0, len(layout)+1)
-		newLayout = append(newLayout, layout[:widest]...)
-		newLayout = append(newLayout, left, right)
-		newLayout = append(newLayout, layout[widest+1:]...)
-		layout = newLayout
+		cur = candidate
+	}
+	if len(cur) > 0 {
+		rows = append(rows, cur)
 	}
 
-	return layout
+	return rows
 }
 
 // renderRow renders one line of components joined by the separator. Components
