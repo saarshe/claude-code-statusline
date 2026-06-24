@@ -41,7 +41,7 @@ func rowsForLayout(input *schema.Input, cfg *config.Config, th *theme.Theme) [][
 		for _, line := range cfg.Lines {
 			flat = append(flat, line.Components...)
 		}
-		return FlowComponents(input, cfg, th, flat, columnsWidth())
+		return FlowComponents(input, cfg, th, flat, UsableWidth(columnsWidth()))
 	}
 
 	rows := make([][]string, len(cfg.Lines))
@@ -107,6 +107,22 @@ func separator(cfg *config.Config, th *theme.Theme) string {
 		return th.Muted.Render(th.Separator)
 	}
 	return th.Muted.Render(" " + cfg.Separator.Character + " ")
+}
+
+// LayoutSafetyMargin is the number of columns kept free when reflowing, so
+// lines never pack to the exact terminal edge. The host renders the status
+// line in slightly less room than COLUMNS reports (a reserved final column,
+// and emoji glyphs that can occupy marginally more space than measured), which
+// would otherwise truncate a line measured at exactly the full width.
+const LayoutSafetyMargin = 2
+
+// UsableWidth reduces a raw terminal width by the safety margin, never going
+// below 1.
+func UsableWidth(raw int) int {
+	if w := raw - LayoutSafetyMargin; w >= 1 {
+		return w
+	}
+	return 1
 }
 
 // columnsWidth returns the live terminal width from the COLUMNS environment

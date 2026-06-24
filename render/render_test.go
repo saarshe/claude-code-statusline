@@ -1,9 +1,11 @@
 package render
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/saarshe/claude-code-statusline/config"
 	"github.com/saarshe/claude-code-statusline/schema"
 	"github.com/saarshe/claude-code-statusline/theme"
@@ -318,6 +320,39 @@ func TestRenderWithTheme_AutoFlattensConfiguredLines(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("expected %q in flattened output, got: %q", want, out)
 		}
+	}
+}
+
+func TestRenderWithTheme_AutoReservesSafetyMargin(t *testing.T) {
+	// Lines must not pack to the exact terminal edge — the host reserves a
+	// column / emoji widths can run slightly wide, so a line measured at
+	// exactly COLUMNS gets truncated. We reserve a small margin to avoid it.
+	th := theme.Get("default")
+	cfg := autoCfg("model", "cost")
+	in := fullInput()
+
+	sep := separator(cfg, th)
+	full := lipgloss.Width(renderRow(in, cfg, th, sep, []string{"model", "cost"}))
+
+	// COLUMNS exactly equal to the rendered width: the margin must still split.
+	t.Setenv("COLUMNS", strconv.Itoa(full))
+	if out := RenderWithTheme(in, cfg, th); !strings.Contains(out, "\n") {
+		t.Errorf("at COLUMNS=%d (exact fit) the safety margin should split the line, got: %q", full, out)
+	}
+
+	// With the margin's worth of headroom, they share one line.
+	t.Setenv("COLUMNS", strconv.Itoa(full+LayoutSafetyMargin))
+	if out := RenderWithTheme(in, cfg, th); strings.Contains(out, "\n") {
+		t.Errorf("at COLUMNS=%d (width+margin) the components should share one line, got: %q", full+LayoutSafetyMargin, out)
+	}
+}
+
+func TestUsableWidth_ReservesMargin(t *testing.T) {
+	if got := UsableWidth(80); got != 80-LayoutSafetyMargin {
+		t.Errorf("UsableWidth(80) = %d, want %d", got, 80-LayoutSafetyMargin)
+	}
+	if got := UsableWidth(1); got < 1 {
+		t.Errorf("UsableWidth(1) = %d, want >= 1 (never below 1)", got)
 	}
 }
 

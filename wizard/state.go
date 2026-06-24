@@ -231,7 +231,7 @@ func (s *WizardState) InferLayout() [][]string {
 
 	base := s.toConfigWithLayout(nil)
 	th := theme.Get(s.Theme)
-	layout := render.FlowComponents(MockInput(), base, th, all, termWidth())
+	layout := render.FlowComponents(MockInput(), base, th, all, render.UsableWidth(termWidth()))
 
 	s.cachedLayout = layout
 	s.layoutCached = true
