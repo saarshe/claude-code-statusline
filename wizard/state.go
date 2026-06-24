@@ -67,7 +67,7 @@ type WizardState struct {
 }
 
 // identityFeatures are shown in the first row (who/where am I).
-var identityFeatures = []string{"model", "effort", "agent", "directory", "worktree", "git", "lines_changed", "pr"}
+var identityFeatures = []string{"model", "effort", "agent", "directory", "worktree", "session_id", "git", "lines_changed", "pr"}
 
 // statsFeatures are shown in the second row (numbers/metrics).
 var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration", "rate_limits"}

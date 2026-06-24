@@ -24,6 +24,8 @@ A customizable status line for [Claude Code](https://code.claude.com/docs/en). S
 
 📁 **Directory** — current working directory
 
+🆔 **Session ID** — the current Claude session ID, ready to copy and resume elsewhere with `claude --resume <id>` (e.g. in another worktree)
+
 🎨 **8 themes** — default, catppuccin, dracula, gruvbox, nord, tokyo-night, powerline, rounded
 
 📐 **Adaptive layout** — components flow across 1–3 lines, responsive to terminal width
