@@ -18,7 +18,8 @@ func MockInput() *schema.Input {
 		Model: schema.Model{
 			DisplayName: "claude-sonnet-4-6",
 		},
-		Cwd: "/home/user/project",
+		SessionID: "7f3a9c20-1b8e-4d6a-9f12-0a4b7c8e5d31",
+		Cwd:       "/home/user/project",
 		Workspace: schema.Workspace{
 			CurrentDir: "/home/user/project",
 		},
