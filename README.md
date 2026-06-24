@@ -28,7 +28,7 @@ A customizable status line for [Claude Code](https://code.claude.com/docs/en). S
 
 🎨 **8 themes** — default, catppuccin, dracula, gruvbox, nord, tokyo-night, powerline, rounded
 
-📐 **Adaptive layout** — components flow across 1–3 lines, responsive to terminal width
+📐 **Adaptive layout** — the wizard splits components across lines to fit your terminal. Opt into `layout = "auto"` and the status line *re-flows live* to the current width on every update
 
 🧙 **Setup wizard** — interactive configurator with live preview, back navigation, and auto-wiring to Claude Code. Re-running `init` on an existing config offers to patch it in place, pre-filling every step with your current values
 
@@ -80,6 +80,23 @@ The wizard adds the following to your `~/.claude/settings.json`:
 ## Configuration
 
 Config lives at `~/.claude-code-statusline/config.toml`. The wizard generates this for you, but you can edit it manually.
+
+### Responsive layout
+
+By default (`layout = "fixed"`) the status line renders the `[[line]]` blocks exactly as configured. Set `layout = "auto"` to make it **reflow to your terminal width** instead: all components are treated as one ordered list and split across as many lines as needed, recomputed on every update.
+
+```toml
+layout = "auto"
+
+[[line]]
+components = ["model", "effort", "directory", "session_id", "git_status", "cost", "duration"]
+```
+
+The wizard offers this as a **Layout** step (Fixed vs. Responsive). In auto mode the `[[line]]` grouping is treated as ordering only.
+
+Live width comes from the `COLUMNS` environment variable, which Claude Code sets for status line scripts (requires Claude Code **v2.1.153+**; older versions fall back to an 80-column layout).
+
+> **Note on resize:** Claude Code re-runs the status line on each response — *not* on terminal resize. So after resizing, the layout corrects on your next message. To make resizes update on their own, add a [`refreshInterval`](https://code.claude.com/docs/en/statusline) to the `statusLine` object in `~/.claude/settings.json` (e.g. `"refreshInterval": 2000`), at the cost of the command re-running on a timer.
 
 ## License
 

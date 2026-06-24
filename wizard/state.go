@@ -6,11 +6,10 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/saarshe/claude-code-statusline/components"
 	"github.com/saarshe/claude-code-statusline/config"
 	"github.com/saarshe/claude-code-statusline/render"
-	"github.com/saarshe/claude-code-statusline/schema"
+	"github.com/saarshe/claude-code-statusline/theme"
 	"golang.org/x/term"
 )
 
@@ -57,6 +56,10 @@ type WizardState struct {
 	// Emojis is "all" or "none".
 	Emojis string
 
+	// Layout is "fixed" (render configured lines verbatim) or "auto" (reflow
+	// components to the terminal width at render time).
+	Layout string
+
 	// BarWidth is the character width of progress bars (default 10).
 	BarWidth int
 
@@ -84,6 +87,7 @@ func DefaultState() *WizardState {
 		GitStyle:        "status",
 		RateLimitsStyle: "reset",
 		Emojis:          "all",
+		Layout:          "fixed",
 		BarWidth:        10,
 	}
 }
@@ -195,81 +199,43 @@ func (s *WizardState) InvalidateLayout() {
 	s.cachedLayout = nil
 }
 
-// InferLayout places all selected components on a single line, then
-// progressively splits the widest line in half until every line fits within
-// the terminal width (or each line has a single component).
-func (s *WizardState) InferLayout() [][]string {
-	if s.layoutCached {
-		return s.cachedLayout
-	}
+// selectedComponents returns the chosen components in canonical display order.
+func (s *WizardState) selectedComponents() []string {
 	featureSet := make(map[string]bool, len(s.Features))
 	for _, f := range s.Features {
 		featureSet[f] = true
 	}
-
-	// Collect all components in canonical order.
 	var all []string
 	for _, f := range featureOrder {
 		if featureSet[f] {
 			all = append(all, s.featureToComponent(f))
 		}
 	}
+	return all
+}
+
+// InferLayout reflows the selected components to fit the wizard's terminal
+// width, using the same algorithm the live renderer applies at runtime. The
+// result drives both the preview and (in fixed mode) the written line config.
+func (s *WizardState) InferLayout() [][]string {
+	if s.layoutCached {
+		return s.cachedLayout
+	}
+
+	all := s.selectedComponents()
 	if len(all) == 0 {
 		s.cachedLayout = nil
 		s.layoutCached = true
 		return nil
 	}
 
-	layout := [][]string{all}
-	tw := termWidth()
-	mockInput := MockInput()
-
-	// Progressively split the widest overflowing line until everything fits.
-	for {
-		exceeds, widest := measureLayout(layout, s, mockInput, tw)
-		if !exceeds {
-			break
-		}
-		if len(layout[widest]) <= 1 {
-			break // can't split a single-component line
-		}
-		mid := len(layout[widest]) / 2
-		left := layout[widest][:mid]
-		right := layout[widest][mid:]
-		// Replace the line with two halves.
-		newLayout := make([][]string, 0, len(layout)+1)
-		newLayout = append(newLayout, layout[:widest]...)
-		newLayout = append(newLayout, left, right)
-		newLayout = append(newLayout, layout[widest+1:]...)
-		layout = newLayout
-	}
+	base := s.toConfigWithLayout(nil)
+	th := theme.Get(s.Theme)
+	layout := render.FlowComponents(MockInput(), base, th, all, termWidth())
 
 	s.cachedLayout = layout
 	s.layoutCached = true
 	return layout
-}
-
-// measureLayout renders the layout once and returns whether any line exceeds
-// the terminal width and the index of the widest line.
-func measureLayout(layout [][]string, s *WizardState, input *schema.Input, tw int) (exceeds bool, widest int) {
-	cfg := s.toConfigWithLayout(layout)
-	output := render.Render(input, cfg)
-	lines := strings.Split(output, "\n")
-
-	bestW := 0
-	for i, line := range lines {
-		if i >= len(layout) {
-			break
-		}
-		w := lipgloss.Width(line)
-		if w > tw {
-			exceeds = true
-		}
-		if w > bestW {
-			widest, bestW = i, w
-		}
-	}
-	return exceeds, widest
 }
 
 // termWidth returns the terminal width, defaulting to 80 if unavailable.
@@ -282,8 +248,20 @@ func termWidth() int {
 }
 
 // ToConfig converts the wizard state to a *config.Config.
+//
+// Fixed mode writes the reflowed lines verbatim. Auto mode writes a single
+// line holding every component in canonical order; the renderer reflows it to
+// the live terminal width at runtime, so the line grouping is just ordering.
 func (s *WizardState) ToConfig() *config.Config {
-	return s.toConfigWithLayout(s.InferLayout())
+	if s.Layout == string(config.LayoutAuto) {
+		cfg := s.toConfigWithLayout(nil)
+		cfg.Layout = config.LayoutAuto
+		cfg.Lines = []config.LineConfig{{Components: s.selectedComponents()}}
+		return cfg
+	}
+	cfg := s.toConfigWithLayout(s.InferLayout())
+	cfg.Layout = config.LayoutFixed
+	return cfg
 }
 
 // toConfigWithLayout builds a config using the given layout (list of component
@@ -313,6 +291,7 @@ func (s *WizardState) toConfigWithLayout(layout [][]string) *config.Config {
 type tomlConfig struct {
 	Theme      string                  `toml:"theme"`
 	Emojis     string                  `toml:"emojis"`
+	Layout     string                  `toml:"layout"`
 	ContextBar config.ContextBarConfig `toml:"context_bar"`
 	Separator  config.SeparatorConfig  `toml:"separator"`
 	Lines      []config.LineConfig     `toml:"line"`
@@ -325,6 +304,7 @@ func (s *WizardState) ToTOML() (string, error) {
 	tc := tomlConfig{
 		Theme:      cfg.Theme,
 		Emojis:     string(cfg.Emojis),
+		Layout:     string(cfg.Layout),
 		ContextBar: cfg.ContextBar,
 		Separator:  cfg.Separator,
 		Lines:      cfg.Lines,

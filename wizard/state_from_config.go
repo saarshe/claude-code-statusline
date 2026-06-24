@@ -20,6 +20,10 @@ func StateFromConfig(cfg *config.Config) (*WizardState, []string) {
 	state := DefaultState()
 	state.Theme = cfg.Theme
 	state.Emojis = string(cfg.Emojis)
+	state.Layout = string(cfg.Layout)
+	if state.Layout == "" {
+		state.Layout = string(config.LayoutFixed)
+	}
 	if cfg.ContextBar.Width > 0 {
 		state.BarWidth = cfg.ContextBar.Width
 	}
@@ -75,10 +79,15 @@ func StateFromConfig(cfg *config.Config) (*WizardState, []string) {
 
 	state.Features = orderFeatures(features)
 
-	state.InvalidateLayout()
-	canonical := state.InferLayout()
-	if !sameComponents(canonical, cfg.Lines) {
-		reasons = append(reasons, "hand-edited layout")
+	// In auto mode the renderer reflows at runtime, so the config stores a
+	// single ordered list rather than pre-split lines — comparing it against
+	// the inferred split would always (falsely) look hand-edited.
+	if state.Layout != string(config.LayoutAuto) {
+		state.InvalidateLayout()
+		canonical := state.InferLayout()
+		if !sameComponents(canonical, cfg.Lines) {
+			reasons = append(reasons, "hand-edited layout")
+		}
 	}
 
 	return state, reasons

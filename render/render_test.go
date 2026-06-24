@@ -252,6 +252,91 @@ func TestRender_NewComponentsAllAbsent_ProducesNoOutput(t *testing.T) {
 	}
 }
 
+func TestColumnsWidth_ReadsEnv(t *testing.T) {
+	t.Setenv("COLUMNS", "123")
+	if w := columnsWidth(); w != 123 {
+		t.Errorf("columnsWidth() = %d, want 123", w)
+	}
+}
+
+func TestColumnsWidth_FallbackWhenEmpty(t *testing.T) {
+	t.Setenv("COLUMNS", "")
+	if w := columnsWidth(); w != 80 {
+		t.Errorf("columnsWidth() = %d, want 80 fallback", w)
+	}
+}
+
+func TestColumnsWidth_FallbackWhenInvalid(t *testing.T) {
+	t.Setenv("COLUMNS", "not-a-number")
+	if w := columnsWidth(); w != 80 {
+		t.Errorf("columnsWidth() = %d, want 80 for invalid value", w)
+	}
+}
+
+func autoCfg(comps ...string) *config.Config {
+	cfg := config.Default()
+	cfg.Layout = config.LayoutAuto
+	cfg.Lines = []config.LineConfig{{Components: comps}}
+	return cfg
+}
+
+func TestRenderWithTheme_AutoReflow_NarrowSplits(t *testing.T) {
+	t.Setenv("COLUMNS", "15")
+	out := RenderWithTheme(fullInput(), autoCfg("model", "context_pct", "cost"), theme.Get("default"))
+
+	if !strings.Contains(out, "\n") {
+		t.Errorf("narrow terminal should split into multiple lines, got: %q", out)
+	}
+}
+
+func TestRenderWithTheme_AutoReflow_WidePacks(t *testing.T) {
+	t.Setenv("COLUMNS", "200")
+	out := RenderWithTheme(fullInput(), autoCfg("model", "context_pct", "cost"), theme.Get("default"))
+
+	if strings.Contains(out, "\n") {
+		t.Errorf("wide terminal should keep everything on one line, got: %q", out)
+	}
+}
+
+func TestRenderWithTheme_AutoFlattensConfiguredLines(t *testing.T) {
+	t.Setenv("COLUMNS", "200")
+	cfg := config.Default()
+	cfg.Layout = config.LayoutAuto
+	// Three configured lines should be flattened, then reflowed for the width.
+	cfg.Lines = []config.LineConfig{
+		{Components: []string{"model"}},
+		{Components: []string{"context_pct"}},
+		{Components: []string{"cost"}},
+	}
+
+	out := RenderWithTheme(fullInput(), cfg, theme.Get("default"))
+
+	if strings.Contains(out, "\n") {
+		t.Errorf("auto mode should flatten 3 lines and pack onto one at width 200, got: %q", out)
+	}
+	for _, want := range []string{"Opus", "28%", "$0.42"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected %q in flattened output, got: %q", want, out)
+		}
+	}
+}
+
+func TestRenderWithTheme_FixedIgnoresColumns(t *testing.T) {
+	t.Setenv("COLUMNS", "5") // absurdly narrow — fixed mode must ignore it
+	cfg := config.Default()
+	cfg.Layout = config.LayoutFixed
+	cfg.Lines = []config.LineConfig{
+		{Components: []string{"model"}},
+		{Components: []string{"cost"}},
+	}
+
+	out := RenderWithTheme(fullInput(), cfg, theme.Get("default"))
+
+	if n := len(strings.Split(out, "\n")); n != 2 {
+		t.Errorf("fixed mode should render exactly the configured 2 lines, got %d: %q", n, out)
+	}
+}
+
 func TestRenderWithTheme_UnknownComponentSkipped(t *testing.T) {
 	cfg := config.Default()
 	cfg.Lines = []config.LineConfig{
