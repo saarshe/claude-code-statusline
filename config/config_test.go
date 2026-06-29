@@ -197,6 +197,50 @@ thresholds = [70]
 	}
 }
 
+func TestDefault_LayoutIsFixed(t *testing.T) {
+	if Default().Layout != LayoutFixed {
+		t.Errorf("Default().Layout = %q, want %q", Default().Layout, LayoutFixed)
+	}
+}
+
+func TestLoadFile_LayoutAuto(t *testing.T) {
+	path := writeTemp(t, `
+layout = "auto"
+
+[[line]]
+components = ["model", "directory", "session_id"]
+`)
+
+	cfg, err := LoadFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Layout != LayoutAuto {
+		t.Errorf("Layout = %q, want %q", cfg.Layout, LayoutAuto)
+	}
+}
+
+func TestLoadFile_LayoutDefaultsToFixed(t *testing.T) {
+	path := writeTemp(t, `theme = "default"`)
+
+	cfg, err := LoadFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Layout != LayoutFixed {
+		t.Errorf("Layout = %q, want %q (default)", cfg.Layout, LayoutFixed)
+	}
+}
+
+func TestLoadFile_InvalidLayout(t *testing.T) {
+	path := writeTemp(t, `layout = "diagonal"`)
+
+	_, err := LoadFile(path)
+	if err == nil {
+		t.Error("expected error for invalid layout, got nil")
+	}
+}
+
 func TestEmojiMode_Constants(t *testing.T) {
 	if EmojiAll != "all" {
 		t.Errorf("EmojiAll = %q, want %q", EmojiAll, "all")

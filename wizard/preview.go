@@ -3,6 +3,7 @@ package wizard
 import (
 	"time"
 
+	"github.com/saarshe/claude-code-statusline/config"
 	"github.com/saarshe/claude-code-statusline/render"
 	"github.com/saarshe/claude-code-statusline/schema"
 )
@@ -61,7 +62,13 @@ func MockInput() *schema.Input {
 }
 
 // Preview renders the status line using mock data and the given wizard state.
+//
+// It always renders the wizard-width-inferred rows verbatim, even in auto mode:
+// at the wizard's current width that is exactly what the live renderer would
+// produce, and it avoids depending on COLUMNS (which may be unset in the wizard
+// process).
 func Preview(state *WizardState) string {
-	cfg := state.ToConfig()
+	cfg := state.toConfigWithLayout(state.InferLayout())
+	cfg.Layout = config.LayoutFixed
 	return render.Render(MockInput(), cfg)
 }

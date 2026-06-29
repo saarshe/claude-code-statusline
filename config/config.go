@@ -26,6 +26,18 @@ const (
 	BarGradient BarStyle = "gradient"
 )
 
+// LayoutMode controls how components are arranged into lines.
+type LayoutMode string
+
+const (
+	// LayoutFixed renders the configured [[line]] blocks verbatim (default).
+	LayoutFixed LayoutMode = "fixed"
+	// LayoutAuto flattens all components into one ordered list and reflows
+	// them across lines to fit the live terminal width (COLUMNS) at render
+	// time. The configured line grouping is treated as ordering only.
+	LayoutAuto LayoutMode = "auto"
+)
+
 type LineConfig struct {
 	Components []string `toml:"components"`
 }
@@ -43,6 +55,7 @@ type SeparatorConfig struct {
 type Config struct {
 	Theme      string           `toml:"theme"`
 	Emojis     EmojiMode        `toml:"emojis"`
+	Layout     LayoutMode       `toml:"layout"`
 	ContextBar ContextBarConfig `toml:"context_bar"`
 	Separator  SeparatorConfig  `toml:"separator"`
 	Lines      []LineConfig     `toml:"line"`
@@ -52,6 +65,7 @@ func Default() *Config {
 	return &Config{
 		Theme:  "default",
 		Emojis: EmojiAll,
+		Layout: LayoutFixed,
 		ContextBar: ContextBarConfig{
 			Style:      BarBlock,
 			Width:      10,
@@ -91,6 +105,9 @@ func LoadFile(path string) (*Config, error) {
 	if raw.Emojis != "" {
 		cfg.Emojis = raw.Emojis
 	}
+	if raw.Layout != "" {
+		cfg.Layout = raw.Layout
+	}
 	if raw.ContextBar.Style != "" {
 		cfg.ContextBar.Style = raw.ContextBar.Style
 	}
@@ -118,6 +135,7 @@ func LoadFile(path string) (*Config, error) {
 type rawConfig struct {
 	Theme      string           `toml:"theme"`
 	Emojis     EmojiMode        `toml:"emojis"`
+	Layout     LayoutMode       `toml:"layout"`
 	ContextBar ContextBarConfig `toml:"context_bar"`
 	Separator  SeparatorConfig  `toml:"separator"`
 	Lines      []LineConfig     `toml:"line"`
@@ -128,6 +146,12 @@ func validate(cfg *Config) error {
 	case EmojiAll, EmojiNone, EmojiCustom:
 	default:
 		return fmt.Errorf("invalid emojis value %q: must be 'all', 'none', or 'custom'", cfg.Emojis)
+	}
+
+	switch cfg.Layout {
+	case LayoutFixed, LayoutAuto:
+	default:
+		return fmt.Errorf("invalid layout value %q: must be 'fixed' or 'auto'", cfg.Layout)
 	}
 
 	switch cfg.ContextBar.Style {
