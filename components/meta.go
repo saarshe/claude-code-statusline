@@ -51,6 +51,7 @@ var componentMeta = map[ComponentKey]Meta{
 	"agent":              {Emoji: "🤖", Name: "Agent name", Desc: "shown when running as a sub-agent"},
 	"worktree":           {Emoji: "🌿", Name: "Worktree", Desc: "shown when working in a git worktree"},
 	"effort":             {Emoji: "🧠", TextPrefix: "Effort: ", Name: "Reasoning effort", Desc: "current /effort level"},
+	"plan":               {Emoji: "🎫", TextPrefix: "Plan: ", Name: "Plan", Desc: "your Claude subscription plan and tier"},
 	"rate_limits":        {Emoji: "📈", TextPrefix: "Limits: ", Name: "Rate limits", Desc: "5h and 7d window usage"},
 	"rate_limits_reset":  {Emoji: "📈", TextPrefix: "Limits: ", Name: "Rate limits + reset", Desc: "usage with countdown to reset"},
 	"pr":                 {Emoji: "🔀", TextPrefix: "PR ", Name: "Open PR", Desc: "current branch's open pull request"},
@@ -103,6 +104,7 @@ var FeatureMeta = []struct {
 }{
 	{"model", componentMeta["model"]},
 	{"effort", componentMeta["effort"]},
+	{"plan", componentMeta["plan"]},
 	{"agent", componentMeta["agent"]},
 	{"directory", componentMeta["directory"]},
 	{"worktree", componentMeta["worktree"]},

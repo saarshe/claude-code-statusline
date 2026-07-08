@@ -37,6 +37,12 @@ func run(args []string, stdin io.Reader) (string, int) {
 		cfg = config.Default()
 	}
 
+	// The plan lives in ~/.claude.json, not the stdin JSON. Only read that file
+	// when the plan component is actually in the layout.
+	if cfg.HasComponent("plan") {
+		input.PopulatePlan()
+	}
+
 	return render.Render(input, cfg), 0
 }
 

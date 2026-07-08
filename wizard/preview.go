@@ -38,6 +38,7 @@ func MockInput() *schema.Input {
 		Agent:    &schema.Agent{Name: "subagent"},
 		Worktree: &schema.Worktree{Name: "feature-branch"},
 		Effort:   &schema.Effort{Level: "high"},
+		Plan:     schema.Plan{OrgType: "claude_max", RateLimitTier: "default_claude_max_20x"},
 		RateLimits: &schema.RateLimits{
 			FiveHour: &schema.RateLimitWindow{UsedPercentage: 23, ResetsAt: now + 2*3600 + 14*60},
 			SevenDay: &schema.RateLimitWindow{UsedPercentage: 41, ResetsAt: now + 3*86400},

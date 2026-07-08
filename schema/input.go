@@ -25,6 +25,7 @@ type Input struct {
 	RateLimits     *RateLimits `json:"rate_limits,omitempty"`
 	PR             *PR         `json:"pr,omitempty"`
 	Git            Git         `json:"-"` // populated at runtime, not from JSON
+	Plan           Plan        `json:"-"` // populated at runtime from ~/.claude.json, not from JSON
 }
 
 type Model struct {

@@ -61,6 +61,19 @@ type Config struct {
 	Lines      []LineConfig     `toml:"line"`
 }
 
+// HasComponent reports whether key appears in any configured line. Used to
+// skip work (e.g. reading files) for components that aren't in the layout.
+func (c *Config) HasComponent(key string) bool {
+	for _, line := range c.Lines {
+		for _, comp := range line.Components {
+			if comp == key {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func Default() *Config {
 	return &Config{
 		Theme:  "default",
