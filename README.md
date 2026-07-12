@@ -10,6 +10,8 @@ A customizable status line for [Claude Code](https://code.claude.com/docs/en). S
 
 🤖 **Model info** — see which Claude model is active, with reasoning **effort** level (low → max) shown alongside
 
+🎫 **Plan** — your Claude subscription plan and tier at a glance (e.g. `Max 20x`, `Pro`, `Team`)
+
 🔢 **Token usage** — input/output counts, cache hit rates, session totals — four verbosity levels
 
 💰 **Cost tracking** — running session cost in USD

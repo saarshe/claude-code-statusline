@@ -70,12 +70,15 @@ type WizardState struct {
 }
 
 // identityFeatures are shown in the first row (who/where am I).
-var identityFeatures = []string{"model", "effort", "agent", "directory", "worktree", "session_id", "git", "lines_changed", "pr"}
+var identityFeatures = []string{"model", "effort", "plan", "agent", "directory", "worktree", "session_id", "git", "lines_changed", "pr"}
 
 // statsFeatures are shown in the second row (numbers/metrics).
 var statsFeatures = []string{"context", "tokens", "cache", "cost", "duration", "rate_limits"}
 
-// DefaultState returns a WizardState that matches config.Default().
+// DefaultState returns the starting state for a fresh wizard run. It matches
+// config.Default() except for Layout: the wizard defaults to "auto" (responsive)
+// because that is the recommended setup, whereas config.Default() (the runtime
+// fallback when no config file exists) stays "fixed".
 func DefaultState() *WizardState {
 	return &WizardState{
 		Theme:           "default",
@@ -87,7 +90,7 @@ func DefaultState() *WizardState {
 		GitStyle:        "status",
 		RateLimitsStyle: "reset",
 		Emojis:          "all",
-		Layout:          "fixed",
+		Layout:          "auto",
 		BarWidth:        10,
 	}
 }

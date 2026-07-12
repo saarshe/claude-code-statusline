@@ -16,9 +16,9 @@ func sliceHas(s []string, want string) bool {
 	return false
 }
 
-func TestDefaultState_LayoutIsFixed(t *testing.T) {
-	if DefaultState().Layout != "fixed" {
-		t.Errorf("DefaultState().Layout = %q, want \"fixed\"", DefaultState().Layout)
+func TestDefaultState_LayoutIsAuto(t *testing.T) {
+	if DefaultState().Layout != "auto" {
+		t.Errorf("DefaultState().Layout = %q, want \"auto\"", DefaultState().Layout)
 	}
 }
 

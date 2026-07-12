@@ -173,7 +173,7 @@ func componentToFeature(comp string, barStyle config.BarStyle) (feature, style s
 // their component key (no style variants). These are valid component names.
 func isOneToOneComponent(comp string) bool {
 	switch comp {
-	case "model", "cost", "duration", "directory", "agent", "worktree", "session_id", "effort", "pr":
+	case "model", "cost", "duration", "directory", "agent", "worktree", "session_id", "effort", "plan", "pr":
 		return true
 	}
 	return false

@@ -209,6 +209,17 @@ func TestStateFromConfig_NotLossyForCanonicalLayout(t *testing.T) {
 	}
 }
 
+func TestStateFromConfig_PlanRoundTrips(t *testing.T) {
+	cfg := defaultConfigWithLines([]string{"model", "plan", "cost"})
+	got, reasons := StateFromConfig(cfg)
+	if len(reasons) > 0 {
+		t.Errorf("plan should round-trip losslessly, got reasons: %v", reasons)
+	}
+	if !equalFeatures(got.Features, []string{"model", "plan", "cost"}) {
+		t.Errorf("Features should include plan: got %v", got.Features)
+	}
+}
+
 func TestStateFromConfig_FeatureOrderIsCanonical(t *testing.T) {
 	cfg := defaultConfigWithLines([]string{"cost", "model", "git_status"})
 	got, _ := StateFromConfig(cfg)
